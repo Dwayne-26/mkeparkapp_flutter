@@ -35,6 +35,8 @@ workflows:
         - ~/.pub-cache
         - ~/Library/Caches/CocoaPods
     scripts:
+      - name: Upgrade codemagic-cli-tools
+        script: pip3 install --upgrade codemagic-cli-tools
       - name: Clean build directories
         script: flutter clean
       - name: Get dependencies
@@ -42,12 +44,18 @@ workflows:
       - name: Set up automatic signing
         script: |
           keychain initialize
+          KEY_PATH="$CM_BUILD_DIR/appstore_connect_key.p8"
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > "$KEY_PATH"
           app-store-connect fetch-signing-files \
             --type IOS_APP_DEVELOPMENT \
-            --bundle-id com.mkeparkapp.app \
+            --bundle-identifier com.mkeparkapp.app \
+            --issuer-id $APP_STORE_CONNECT_ISSUER_ID \
+            --key-id $APP_STORE_CONNECT_KEY_ID \
+            --api-key "$KEY_PATH" \
             --create
           keychain add-certificates
           xcode-project use-profiles
+          rm -f "$KEY_PATH"
       - name: Build IPA
         script: flutter build ipa --release
     artifacts:
