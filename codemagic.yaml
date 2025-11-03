@@ -1,72 +1,27 @@
 workflows:
-  web-release:
-    name: Build Web App
+  android-google-play:
+    name: Publish Android to Google Play
     environment:
       flutter: stable
-      vars:
-        BUILD_DIR: build/web
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-    scripts:
-      - name: Clean build directories
-        script: flutter clean
-      - name: Get dependencies
-        script: flutter pub get
-      - name: Build web release
-        script: flutter build web --release
-    artifacts:
-      - $BUILD_DIR/**
-    publishing:
-      email:
-        recipients:
-          - mkeparkapp@gmail.com
-  ios-testflight:
-    name: Publish iOS to TestFlight
-    environment:
-      flutter: stable
-      xcode: latest
+      java: 17
       groups:
-        - app_store_connect_credentials
-      vars:
-        PACKAGE_NAME: "com.mkeparkapp.app"
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/Library/Caches/CocoaPods
+        - keystore_credentials
+        - google_play_credentials
     scripts:
-      - name: Upgrade codemagic-cli-tools
-        script: pip3 install --upgrade codemagic-cli-tools
       - name: Clean build directories
-        script: flutter clean
+        script: |
+          flutter clean
+          rm -rf ~/.gradle/caches/*/fileHashes
       - name: Get dependencies
         script: flutter pub get
-      - name: Set up automatic signing
-        script: |
-          keychain initialize
-          KEY_PATH="$CM_BUILD_DIR/appstore_connect_key.p8"
-          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode > "$KEY_PATH"
-          app-store-connect fetch-signing-files \
-            --type IOS_APP_DEVELOPMENT \
-            --bundle-identifier com.mkeparkapp.app \
-            --issuer-id $APP_STORE_CONNECT_ISSUER_ID \
-            --key-id $APP_STORE_CONNECT_KEY_ID \
-            --api-key "$KEY_PATH" \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
-          rm -f "$KEY_PATH"
-      - name: Build IPA
-        script: flutter build ipa --release
+      - name: Build app bundle
+        script: flutter build appbundle --release
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/app/outputs/bundle/release/app-release.aab
     publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        key_id: $APP_STORE_CONNECT_KEY_ID
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_app_store: false
-        submit_to_testflight: true
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT
+        track: internal
       email:
         recipients:
           - mkeparkapp@gmail.com
