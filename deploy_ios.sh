@@ -13,11 +13,11 @@
 set -e
 
 # --------- CONFIG: EDIT THESE ---------
-APP_NAME="YourAppName"
-BUNDLE_ID="com.yourcompany.yourapp"
-APPLE_ID="you@example.com"     # your Apple ID (or App Store Connect email)
-TEAM_ID="ABCD123456"           # Apple Developer Team ID
-ITC_TEAM_ID="12345678"         # App Store Connect Team ID (iTunes Team ID)
+APP_NAME="mkeparkapp"
+BUNDLE_ID="com.mkeparkapp.app"
+APPLE_ID="mkeparkapp@gmail.com"     # your Apple ID (or App Store Connect email)
+TEAM_ID="J8U8FW3PA8"           # Apple Developer Team ID
+ITC_TEAM_ID="J8U8FW3PA8"         # App Store Connect Team ID (iTunes Team ID)
 IPA_PATH="build/ios/ipa/Runner.ipa"
 INFO_PLIST="ios/Runner/Info.plist"
 # --------------------------------------
