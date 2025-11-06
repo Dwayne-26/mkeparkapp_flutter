@@ -4,9 +4,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      groups:
-        - keystore_credentials
-        - google_play_credentials
     scripts:
       - name: Clean build directories
         script: |
@@ -30,8 +27,6 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      groups:
-        - app_store_connect_credentials
       vars:
         PACKAGE_NAME: "com.mkeparkapp.app"
     cache:
