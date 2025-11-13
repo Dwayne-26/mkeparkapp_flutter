@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# CitySmart generated artifacts
+CitySmart_App_Bundle/
+CitySmart_App_Bundle.zip

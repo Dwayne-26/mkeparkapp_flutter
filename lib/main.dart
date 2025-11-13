@@ -5,6 +5,7 @@ import 'screens/permit_screen.dart';
 import 'screens/street_sweeping_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/landing_screen.dart';
+import 'citysmart/branding_preview.dart';
 
 void main() {
   runApp(const MKEParkApp());
@@ -26,10 +27,18 @@ class MKEParkApp extends StatelessWidget {
         child: Builder(
           builder: (context) => ListView(
             padding: EdgeInsets.zero,
-            children: const [
-              DrawerHeader(
+            children: [
+              const DrawerHeader(
                 decoration: BoxDecoration(color: Color(0xFF003E29)),
                 child: Text('Milwaukee, WI', style: TextStyle(color: Colors.white, fontSize: 20)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.brush_outlined, color: Colors.white),
+                title: const Text('Branding Preview', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context); // close the drawer first
+                  Navigator.pushNamed(context, '/branding');
+                },
               ),
             ],
           ),
@@ -57,6 +66,7 @@ class MKEParkApp extends StatelessWidget {
         '/sweeping': (context) => const StreetSweepingScreen(),
         '/history': (context) => HistoryScreen(),
         '/landing': (context) => LandingScreen(),
+        '/branding': (context) => const BrandingPreviewPage(),
       },
     );
   }
