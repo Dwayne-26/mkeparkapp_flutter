@@ -32,7 +32,7 @@ This package contains the complete storyboard and design documentation for the C
 ## Version Information
 - **Version**: 1.6
 - **Target City**: Milwaukee, WI
-- **Last Updated**: November 2024
+- **Last Updated**: November 2025
 - **Compatibility**: Flutter 3.x, iOS 15+, Android API 26+
 
 ## Usage Instructions
