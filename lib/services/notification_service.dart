@@ -44,6 +44,7 @@ class NotificationService {
         );
       }
     });
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     _initialized = true;
   }
 
@@ -90,8 +91,20 @@ class NotificationService {
       log('Registered push token: $token');
     } catch (e) {
       log('Failed to register push token: $e');
-    }
   }
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {
+    // Already initialized.
+  }
+  // Optionally handle background payloads for risk alerts.
+}
 
   String _platform() => kIsWeb ? 'web' : 'mobile';
 }
