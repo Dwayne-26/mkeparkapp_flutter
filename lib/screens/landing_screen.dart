@@ -205,6 +205,12 @@ class LandingScreen extends StatelessWidget {
                         Navigator.pushNamed(context, '/history/receipts'),
                   ),
                   _OverviewTile(
+                    icon: Icons.public,
+                    label: 'City & language',
+                    value: 'Settings',
+                    onTap: () => Navigator.pushNamed(context, '/city-settings'),
+                  ),
+                  _OverviewTile(
                     icon: Icons.history,
                     label: 'History',
                     value: 'View',

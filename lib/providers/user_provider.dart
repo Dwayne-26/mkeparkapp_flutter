@@ -16,6 +16,7 @@ import '../models/user_profile.dart';
 import '../models/vehicle.dart';
 import '../models/maintenance_report.dart';
 import '../models/garbage_schedule.dart';
+import '../models/city_rule_pack.dart';
 import '../services/ticket_api_service.dart';
 import '../services/user_repository.dart';
 import '../data/sample_tickets.dart';
@@ -23,6 +24,7 @@ import '../services/report_api_service.dart';
 import '../services/api_client.dart';
 import '../data/sample_schedules.dart';
 import '../services/notification_service.dart';
+import '../data/city_rule_packs.dart';
 
 class UserProvider extends ChangeNotifier {
   UserProvider({required UserRepository userRepository})
@@ -44,6 +46,10 @@ class UserProvider extends ChangeNotifier {
   SubscriptionTier _tier = SubscriptionTier.free;
   List<MaintenanceReport> _maintenanceReports = const [];
   List<GarbageSchedule> _garbageSchedules = const [];
+  CityRulePack _rulePack = defaultRulePack;
+  String _cityId = 'default';
+  String _tenantId = 'default';
+  String _languageCode = 'en';
 
   bool get isInitializing => _initializing;
   bool get isLoggedIn => _profile != null;
@@ -67,6 +73,10 @@ class UserProvider extends ChangeNotifier {
   bool get prioritySupport => subscriptionPlan.prioritySupport;
   List<MaintenanceReport> get maintenanceReports => _maintenanceReports;
   List<GarbageSchedule> get garbageSchedules => _garbageSchedules;
+  CityRulePack get rulePack => _profile?.rulePack ?? _rulePack;
+  String get cityId => _profile?.cityId ?? _cityId;
+  String get tenantId => _profile?.tenantId ?? _tenantId;
+  String get languageCode => _profile?.languageCode ?? _languageCode;
 
   /// Computes a rough risk score (0–100) based on recent enforcement sightings,
   /// expiring permits, overdue tickets, and impending street sweeping.
@@ -116,6 +126,10 @@ class UserProvider extends ChangeNotifier {
     _garbageSchedules = sampleSchedules(
       _profile?.address ?? '1234 E Sample St',
     );
+    _rulePack = _profile?.rulePack ?? rulePackFor(cityId);
+    _cityId = _profile?.cityId ?? _cityId;
+    _tenantId = _profile?.tenantId ?? _tenantId;
+    _languageCode = _profile?.languageCode ?? _languageCode;
     _tickets = storedTickets.isNotEmpty
         ? storedTickets
         : List<Ticket>.from(sampleTickets);
@@ -197,6 +211,10 @@ class UserProvider extends ChangeNotifier {
     _receipts = const [];
     _maintenanceReports = const [];
     _garbageSchedules = const [];
+    _rulePack = defaultRulePack;
+    _cityId = 'default';
+    _tenantId = 'default';
+    _languageCode = 'en';
     await _repository.clearProfile();
     await _repository.saveSightings(const []);
     await _repository.saveTickets(const []);
@@ -212,6 +230,10 @@ class UserProvider extends ChangeNotifier {
     String? address,
     AdPreferences? adPreferences,
     SubscriptionTier? tier,
+    String? cityId,
+    String? tenantId,
+    String? languageCode,
+    CityRulePack? rulePack,
   }) async {
     if (_profile == null) return;
     final updated = _profile!.copyWith(
@@ -221,6 +243,10 @@ class UserProvider extends ChangeNotifier {
       address: address ?? _profile!.address,
       adPreferences: adPreferences ?? _profile!.adPreferences,
       tier: tier ?? _profile!.tier,
+      cityId: cityId ?? _profile!.cityId,
+      tenantId: tenantId ?? _profile!.tenantId,
+      languageCode: languageCode ?? _profile!.languageCode,
+      rulePack: rulePack ?? _profile!.rulePack,
     );
     _profile = updated;
     await _repository.saveProfile(updated);
@@ -361,6 +387,33 @@ class UserProvider extends ChangeNotifier {
     _tier = tier;
     if (_profile != null) {
       _profile = _profile!.copyWith(tier: tier);
+      await _repository.saveProfile(_profile!);
+    }
+    notifyListeners();
+  }
+
+  Future<void> updateCityAndTenant({
+    required String cityId,
+    required String tenantId,
+  }) async {
+    _cityId = cityId;
+    _tenantId = tenantId;
+    _rulePack = rulePackFor(cityId);
+    if (_profile != null) {
+      _profile = _profile!.copyWith(
+        cityId: cityId,
+        tenantId: tenantId,
+        rulePack: _rulePack,
+      );
+      await _repository.saveProfile(_profile!);
+    }
+    notifyListeners();
+  }
+
+  Future<void> updateLanguage(String languageCode) async {
+    _languageCode = languageCode;
+    if (_profile != null) {
+      _profile = _profile!.copyWith(languageCode: languageCode);
       await _repository.saveProfile(_profile!);
     }
     notifyListeners();

@@ -23,6 +23,7 @@ import 'screens/history_receipts_screen.dart';
 import 'screens/maintenance_report_screen.dart';
 import 'screens/charging_map_screen.dart';
 import 'screens/garbage_schedule_screen.dart';
+import 'screens/city_settings_screen.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
@@ -73,6 +74,7 @@ class MKEParkApp extends StatelessWidget {
           '/maintenance': (context) => const MaintenanceReportScreen(),
           '/predictions': (context) => const ChargingMapScreen(),
           '/garbage': (context) => const GarbageScheduleScreen(),
+          '/city-settings': (context) => const CitySettingsScreen(),
         },
       ),
     );

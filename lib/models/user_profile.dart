@@ -5,6 +5,7 @@ import 'user_preferences.dart';
 import 'ad_preferences.dart';
 import 'subscription_plan.dart';
 import 'vehicle.dart';
+import 'city_rule_pack.dart';
 
 class UserProfile {
   const UserProfile({
@@ -25,6 +26,13 @@ class UserProfile {
     this.sweepingSchedules = const [],
     this.adPreferences = const AdPreferences(),
     this.tier = SubscriptionTier.free,
+    this.cityId = 'default',
+    this.tenantId = 'default',
+    this.rulePack = const CityRulePack(
+      cityId: 'default',
+      displayName: 'Default City',
+    ),
+    this.languageCode = 'en',
   });
 
   final String id;
@@ -37,6 +45,10 @@ class UserProfile {
   final UserPreferences preferences;
   final AdPreferences adPreferences;
   final SubscriptionTier tier;
+  final String cityId;
+  final String tenantId;
+  final CityRulePack rulePack;
+  final String languageCode;
   final List<Permit> permits;
   final List<Reservation> reservations;
   final List<StreetSweepingSchedule> sweepingSchedules;
@@ -54,6 +66,10 @@ class UserProfile {
     List<StreetSweepingSchedule>? sweepingSchedules,
     AdPreferences? adPreferences,
     SubscriptionTier? tier,
+    String? cityId,
+    String? tenantId,
+    CityRulePack? rulePack,
+    String? languageCode,
   }) {
     return UserProfile(
       id: id,
@@ -66,6 +82,10 @@ class UserProfile {
       preferences: preferences ?? this.preferences,
       adPreferences: adPreferences ?? this.adPreferences,
       tier: tier ?? this.tier,
+      cityId: cityId ?? this.cityId,
+      tenantId: tenantId ?? this.tenantId,
+      rulePack: rulePack ?? this.rulePack,
+      languageCode: languageCode ?? this.languageCode,
       permits: permits ?? this.permits,
       reservations: reservations ?? this.reservations,
       sweepingSchedules: sweepingSchedules ?? this.sweepingSchedules,
@@ -101,6 +121,31 @@ class UserProfile {
         (value) => value.name == (json['tier'] as String? ?? 'free'),
         orElse: () => SubscriptionTier.free,
       ),
+      cityId: json['cityId'] as String? ?? 'default',
+      tenantId: json['tenantId'] as String? ?? 'default',
+      rulePack: CityRulePack(
+        cityId: (json['rulePack'] as Map<String, dynamic>?)?['cityId'] as String? ??
+            'default',
+        displayName: (json['rulePack'] as Map<String, dynamic>?)?['displayName']
+                as String? ??
+            'Default City',
+        maxVehicles: (json['rulePack'] as Map<String, dynamic>?)?['maxVehicles']
+                as int? ??
+            5,
+        defaultAlertRadius:
+            (json['rulePack'] as Map<String, dynamic>?)?['defaultAlertRadius']
+                    as int? ??
+                5,
+        quotaRequestsPerHour:
+            (json['rulePack'] as Map<String, dynamic>?)?['quotaRequestsPerHour']
+                    as int? ??
+                100,
+        rateLimitPerMinute:
+            (json['rulePack'] as Map<String, dynamic>?)?['rateLimitPerMinute']
+                    as int? ??
+                30,
+      ),
+      languageCode: json['languageCode'] as String? ?? 'en',
       permits: permitsJson
           .map((permit) => Permit.fromJson(permit as Map<String, dynamic>))
           .toList(),
@@ -131,6 +176,17 @@ class UserProfile {
     'preferences': preferences.toJson(),
     'adPreferences': adPreferences.toJson(),
     'tier': tier.name,
+    'cityId': cityId,
+    'tenantId': tenantId,
+    'rulePack': {
+      'cityId': rulePack.cityId,
+      'displayName': rulePack.displayName,
+      'maxVehicles': rulePack.maxVehicles,
+      'defaultAlertRadius': rulePack.defaultAlertRadius,
+      'quotaRequestsPerHour': rulePack.quotaRequestsPerHour,
+      'rateLimitPerMinute': rulePack.rateLimitPerMinute,
+    },
+    'languageCode': languageCode,
     'permits': permits.map((permit) => permit.toJson()).toList(),
     'reservations': reservations.map((r) => r.toJson()).toList(),
     'sweepingSchedules': sweepingSchedules
