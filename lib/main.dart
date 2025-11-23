@@ -21,9 +21,11 @@ import 'screens/welcome_screen.dart';
 import 'services/user_repository.dart';
 import 'screens/history_receipts_screen.dart';
 import 'screens/maintenance_report_screen.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.initialize();
   final repository = await UserRepository.create();
   runApp(MKEParkApp(userRepository: repository));
 }

@@ -1,0 +1,97 @@
+import 'dart:developer';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../firebase_options.dart';
+import 'api_client.dart';
+
+class NotificationService {
+  NotificationService._();
+  static final NotificationService instance = NotificationService._();
+
+  final _messaging = FirebaseMessaging.instance;
+  final _local = FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
+
+  Future<void> initialize() async {
+    if (_initialized) return;
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await _requestPermissions();
+    await _setupLocalNotifications();
+    await _registerToken();
+
+    FirebaseMessaging.onMessage.listen((message) {
+      final notification = message.notification;
+      final android = message.notification?.android;
+      if (notification != null) {
+        _local.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'risk_alerts',
+              'Risk Alerts',
+              importance: Importance.high,
+              icon: android?.smallIcon,
+            ),
+            iOS: const DarwinNotificationDetails(),
+          ),
+        );
+      }
+    });
+    _initialized = true;
+  }
+
+  Future<void> _requestPermissions() async {
+    final settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      sound: true,
+    );
+    log('Notification permission: ${settings.authorizationStatus}');
+  }
+
+  Future<void> _setupLocalNotifications() async {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(android: android, iOS: ios);
+    await _local.initialize(initSettings);
+
+    const channel = AndroidNotificationChannel(
+      'risk_alerts',
+      'Risk Alerts',
+      description: 'Tow/ticket risk notifications',
+      importance: Importance.high,
+    );
+    await _local
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  Future<void> _registerToken() async {
+    try {
+      final token = await _messaging.getToken();
+      if (token == null) return;
+      final client = ApiClient();
+      await client.post(
+        '/devices/register',
+        jsonBody: {
+          'token': token,
+          'platform': _platform(),
+        },
+      );
+      log('Registered push token: $token');
+    } catch (e) {
+      log('Failed to register push token: $e');
+    }
+  }
+
+  String _platform() => kIsWeb ? 'web' : 'mobile';
+}
