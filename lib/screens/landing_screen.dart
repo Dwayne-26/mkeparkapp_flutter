@@ -140,6 +140,12 @@ class LandingScreen extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(context, '/subscriptions'),
                   ),
                   _OverviewTile(
+                    icon: Icons.home_repair_service,
+                    label: 'Maintenance',
+                    value: 'Report',
+                    onTap: () => Navigator.pushNamed(context, '/maintenance'),
+                  ),
+                  _OverviewTile(
                     icon: Icons.warning_amber_rounded,
                     label: 'Report sighting',
                     value: 'Tow/Enforcer',

@@ -6,6 +6,7 @@ import '../models/sighting_report.dart';
 import '../models/payment_receipt.dart';
 import '../models/ticket.dart';
 import '../models/user_profile.dart';
+import '../models/maintenance_report.dart';
 
 class UserRepository {
   UserRepository._(this._prefs);
@@ -16,6 +17,7 @@ class UserRepository {
   static const _sightingsKey = 'sighting_reports_v1';
   static const _ticketsKey = 'tickets_v1';
   static const _receiptsKey = 'receipts_v1';
+  static const _maintenanceKey = 'maintenance_reports_v1';
 
   static Future<UserRepository> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -95,5 +97,29 @@ class UserRepository {
   Future<void> saveReceipts(List<PaymentReceipt> receipts) async {
     final serialized = receipts.map((r) => r.toJson()).toList();
     await _prefs.setString(_receiptsKey, jsonEncode(serialized));
+  }
+
+  Future<List<MaintenanceReport>> loadMaintenanceReports() async {
+    final stored = _prefs.getString(_maintenanceKey);
+    if (stored == null) return [];
+    try {
+      final jsonList = jsonDecode(stored) as List<dynamic>;
+      return jsonList
+          .map(
+            (item) => MaintenanceReport.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveMaintenanceReports(
+    List<MaintenanceReport> reports,
+  ) async {
+    final serialized = reports.map((r) => r.toJson()).toList();
+    await _prefs.setString(_maintenanceKey, jsonEncode(serialized));
   }
 }

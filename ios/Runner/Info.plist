@@ -49,5 +49,7 @@
 	<string>Allow MKEPark to tag enforcement/tow sightings with your current location.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Allow MKEPark to tag enforcement/tow sightings with your current location.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow MKEPark to attach photos to maintenance reports.</string>
 </dict>
 </plist>

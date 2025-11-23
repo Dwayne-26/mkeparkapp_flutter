@@ -9,6 +9,7 @@ class SightingReport {
     this.longitude,
     required this.notes,
     required this.reportedAt,
+    this.occurrences = 1,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class SightingReport {
   final double? longitude;
   final String notes;
   final DateTime reportedAt;
+  final int occurrences;
 
   Map<String, dynamic> toJson() {
     return {
@@ -28,6 +30,7 @@ class SightingReport {
       'longitude': longitude,
       'notes': notes,
       'reportedAt': reportedAt.toIso8601String(),
+      'occurrences': occurrences,
     };
   }
 
@@ -45,6 +48,7 @@ class SightingReport {
       notes: json['notes'] as String? ?? '',
       reportedAt: DateTime.tryParse(json['reportedAt'] as String? ?? '') ??
           DateTime.now(),
+      occurrences: json['occurrences'] as int? ?? 1,
     );
   }
 }

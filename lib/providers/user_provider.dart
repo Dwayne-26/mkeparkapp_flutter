@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/permit.dart';
@@ -12,6 +14,7 @@ import '../models/subscription_plan.dart';
 import '../models/user_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/vehicle.dart';
+import '../models/maintenance_report.dart';
 import '../services/ticket_api_service.dart';
 import '../services/user_repository.dart';
 import '../data/sample_tickets.dart';
@@ -33,6 +36,7 @@ class UserProvider extends ChangeNotifier {
   List<PaymentReceipt> _receipts = const [];
   AdPreferences _adPreferences = const AdPreferences();
   SubscriptionTier _tier = SubscriptionTier.free;
+  List<MaintenanceReport> _maintenanceReports = const [];
 
   bool get isInitializing => _initializing;
   bool get isLoggedIn => _profile != null;
@@ -54,6 +58,7 @@ class UserProvider extends ChangeNotifier {
   int get maxAlertsPerDay => subscriptionPlan.alertVolumePerDay;
   double get planFeeWaiverCap => subscriptionPlan.feeWaiverPct;
   bool get prioritySupport => subscriptionPlan.prioritySupport;
+  List<MaintenanceReport> get maintenanceReports => _maintenanceReports;
   List<String> get cityParkingSuggestions {
     final set = <String>{};
     for (final schedule in sweepingSchedules) {
@@ -68,6 +73,7 @@ class UserProvider extends ChangeNotifier {
     _receipts = await _repository.loadReceipts();
     _adPreferences = _profile?.adPreferences ?? _adPreferences;
     _tier = _profile?.tier ?? _tier;
+    _maintenanceReports = await _repository.loadMaintenanceReports();
     _tickets = storedTickets.isNotEmpty
         ? storedTickets
         : List<Ticket>.from(sampleTickets);
@@ -147,10 +153,12 @@ class UserProvider extends ChangeNotifier {
     _adPreferences = const AdPreferences();
     _tier = SubscriptionTier.free;
     _receipts = const [];
+    _maintenanceReports = const [];
     await _repository.clearProfile();
     await _repository.saveSightings(const []);
     await _repository.saveTickets(const []);
     await _repository.saveReceipts(const []);
+    await _repository.saveMaintenanceReports(const []);
     notifyListeners();
   }
 
@@ -192,7 +200,8 @@ class UserProvider extends ChangeNotifier {
       notes: notes,
       reportedAt: DateTime.now(),
     );
-    _sightings = [report, ..._sightings];
+    final deduped = _dedupeSighting(report);
+    _sightings = deduped;
     await _repository.saveSightings(_sightings);
     notifyListeners();
   }
@@ -398,6 +407,116 @@ class UserProvider extends ChangeNotifier {
     await _persistTickets();
     notifyListeners();
   }
+
+  Future<MaintenanceReport> submitMaintenanceReport({
+    required MaintenanceCategory category,
+    required String description,
+    required String location,
+    double? latitude,
+    double? longitude,
+    String? photoPath,
+  }) async {
+    final department = _routeDepartment(category, location);
+    final report = MaintenanceReport(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      category: category,
+      description: description,
+      location: location,
+      latitude: latitude,
+      longitude: longitude,
+      photoPath: photoPath,
+      department: department,
+      status: 'Submitted',
+      createdAt: DateTime.now(),
+    );
+    _maintenanceReports = [report, ..._maintenanceReports];
+    await _repository.saveMaintenanceReports(_maintenanceReports);
+    notifyListeners();
+    return report;
+  }
+
+  String _routeDepartment(MaintenanceCategory category, String location) {
+    switch (category) {
+      case MaintenanceCategory.pothole:
+      case MaintenanceCategory.snow:
+        return 'Streets & Sanitation';
+      case MaintenanceCategory.streetlight:
+        return 'Electrical Services';
+      case MaintenanceCategory.signage:
+        return 'Traffic Engineering';
+      case MaintenanceCategory.graffiti:
+        return 'Neighborhood Services';
+      case MaintenanceCategory.trash:
+        return 'Sanitation';
+      case MaintenanceCategory.tree:
+        return 'Forestry';
+      case MaintenanceCategory.water:
+        return 'Water Works';
+    }
+  }
+
+  List<SightingReport> _dedupeSighting(SightingReport incoming) {
+    if (incoming.latitude == null || incoming.longitude == null) {
+      return [incoming, ..._sightings];
+    }
+    final updated = <SightingReport>[];
+    bool merged = false;
+    for (final existing in _sightings) {
+      if (existing.type == incoming.type &&
+          existing.latitude != null &&
+          existing.longitude != null &&
+          _distanceMeters(
+                existing.latitude!,
+                existing.longitude!,
+                incoming.latitude!,
+                incoming.longitude!,
+              ) <
+              150 &&
+          incoming.reportedAt.difference(existing.reportedAt).inMinutes.abs() <
+              15) {
+        merged = true;
+        updated.add(
+          SightingReport(
+            id: existing.id,
+            type: existing.type,
+            location: incoming.location.isNotEmpty
+                ? incoming.location
+                : existing.location,
+            latitude: existing.latitude,
+            longitude: existing.longitude,
+            notes: existing.notes.isNotEmpty ? existing.notes : incoming.notes,
+            reportedAt: incoming.reportedAt.isAfter(existing.reportedAt)
+                ? incoming.reportedAt
+                : existing.reportedAt,
+            occurrences: existing.occurrences + 1,
+          ),
+        );
+      } else {
+        updated.add(existing);
+      }
+    }
+    if (!merged) {
+      updated.insert(0, incoming);
+    }
+    return updated;
+  }
+
+  double _distanceMeters(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const earthRadius = 6371000; // meters
+    final dLat = _degToRad(lat2 - lat1);
+    final dLon = _degToRad(lon2 - lon1);
+    final a = (sin(dLat / 2) * sin(dLat / 2)) +
+        cos(_degToRad(lat1)) * cos(_degToRad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180);
 
   SubscriptionPlan _planForTier(SubscriptionTier tier) {
     switch (tier) {
