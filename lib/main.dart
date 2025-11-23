@@ -18,6 +18,7 @@ import 'screens/street_sweeping_screen.dart';
 import 'screens/vehicle_management_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/user_repository.dart';
+import 'screens/history_receipts_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,7 @@ class MKEParkApp extends StatelessWidget {
           '/permit-workflow': (context) => const PermitWorkflowScreen(),
           '/sweeping': (context) => const StreetSweepingScreen(),
           '/history': (context) => HistoryScreen(),
+          '/history/receipts': (context) => const HistoryReceiptsScreen(),
           '/branding': (context) => const BrandingPreviewPage(),
           '/profile': (context) => const ProfileScreen(),
           '/vehicles': (context) => const VehicleManagementScreen(),
