@@ -143,6 +143,12 @@ class LandingScreen extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(context, '/permit-workflow'),
                   ),
                   _OverviewTile(
+                    icon: Icons.insights,
+                    label: 'Predictions',
+                    value: 'Heatmap',
+                    onTap: () => Navigator.pushNamed(context, '/predictions'),
+                  ),
+                  _OverviewTile(
                     icon: Icons.notifications_active_outlined,
                     label: 'Alerts',
                     value: alertsLabel,
