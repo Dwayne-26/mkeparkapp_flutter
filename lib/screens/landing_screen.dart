@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
+import '../services/risk_alert_service.dart';
 
 class LandingScreen extends StatelessWidget {
   @override
@@ -15,6 +16,8 @@ class LandingScreen extends StatelessWidget {
         }
         final profile = provider.profile;
         final isGuest = provider.isGuest;
+        // Start in-app risk watcher (no-op if already running).
+        RiskAlertService.instance.start(provider);
         if (!isGuest && profile == null) {
           return Scaffold(
             backgroundColor: const Color(0xFF203731),
