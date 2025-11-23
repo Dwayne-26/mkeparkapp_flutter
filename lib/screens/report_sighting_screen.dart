@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../models/sighting_report.dart';
 import '../providers/user_provider.dart';
+import '../services/location_service.dart';
 
 class ReportSightingScreen extends StatefulWidget {
   const ReportSightingScreen({super.key});
@@ -17,6 +19,9 @@ class _ReportSightingScreenState extends State<ReportSightingScreen> {
   final _notesController = TextEditingController();
   SightingType _type = SightingType.parkingEnforcer;
   bool _submitting = false;
+  bool _locating = false;
+  Position? _lastPosition;
+  final _locationService = LocationService();
 
   @override
   void dispose() {
@@ -33,6 +38,8 @@ class _ReportSightingScreenState extends State<ReportSightingScreen> {
       type: _type,
       location: _locationController.text.trim(),
       notes: _notesController.text.trim(),
+      latitude: _lastPosition?.latitude,
+      longitude: _lastPosition?.longitude,
     );
     setState(() => _submitting = false);
     if (!mounted) return;
@@ -101,6 +108,33 @@ class _ReportSightingScreenState extends State<ReportSightingScreen> {
                                   value != null && value.trim().isNotEmpty
                                       ? null
                                       : 'Add a location',
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _locating ? null : _useMyLocation,
+                                  icon: _locating
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.my_location),
+                                  label: const Text('Use my location'),
+                                ),
+                                if (_lastPosition != null) ...[
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _formatCoords(_lastPosition!),
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
@@ -192,6 +226,29 @@ class _ReportSightingScreenState extends State<ReportSightingScreen> {
       return '${difference.inHours} hr ago';
     }
     return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+  }
+
+  String _formatCoords(Position pos) {
+    return '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
+  }
+
+  Future<void> _useMyLocation() async {
+    setState(() => _locating = true);
+    final position = await _locationService.getCurrentPosition();
+    setState(() => _locating = false);
+    if (!mounted) return;
+    if (position == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location unavailable. Check permissions.')),
+      );
+      return;
+    }
+    setState(() => _lastPosition = position);
+    _locationController.text =
+        '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Location added to report.')),
+    );
   }
 
   void _showNotes(String notes) {

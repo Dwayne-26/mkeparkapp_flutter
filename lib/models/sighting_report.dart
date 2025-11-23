@@ -5,6 +5,8 @@ class SightingReport {
     required this.id,
     required this.type,
     required this.location,
+    this.latitude,
+    this.longitude,
     required this.notes,
     required this.reportedAt,
   });
@@ -12,6 +14,8 @@ class SightingReport {
   final String id;
   final SightingType type;
   final String location;
+  final double? latitude;
+  final double? longitude;
   final String notes;
   final DateTime reportedAt;
 
@@ -20,6 +24,8 @@ class SightingReport {
       'id': id,
       'type': type.name,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'notes': notes,
       'reportedAt': reportedAt.toIso8601String(),
     };
@@ -34,6 +40,8 @@ class SightingReport {
         orElse: () => SightingType.parkingEnforcer,
       ),
       location: json['location'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       notes: json['notes'] as String? ?? '',
       reportedAt: DateTime.tryParse(json['reportedAt'] as String? ?? '') ??
           DateTime.now(),

@@ -142,11 +142,15 @@ class UserProvider extends ChangeNotifier {
     required SightingType type,
     required String location,
     String notes = '',
+    double? latitude,
+    double? longitude,
   }) async {
     final report = SightingReport(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: type,
       location: location,
+      latitude: latitude,
+      longitude: longitude,
       notes: notes,
       reportedAt: DateTime.now(),
     );
