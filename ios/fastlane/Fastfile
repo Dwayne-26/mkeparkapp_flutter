@@ -21,7 +21,7 @@ platform :ios do
       workspace: "Runner.xcworkspace",
       export_method: "app-store",
       xcargs: "-allowProvisioningUpdates",
-      team_id: ENV['TEAM_ID'],
+      export_team_id: ENV['TEAM_ID'],
     )
 
     upload_to_testflight(
