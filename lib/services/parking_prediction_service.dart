@@ -15,7 +15,7 @@ class ParkingPredictionService {
     required DateTime when,
     required double latitude,
     required double longitude,
-    double eventLoad, // 0 (no event) to 1 (major event)
+    double eventLoad = 0.0, // 0 (no event) to 1 (major event)
   }) {
     final hourScore = _hourFactor(when.hour);
     final dayScore = _dayFactor(when.weekday);
