@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'citysmart/branding_preview.dart';
+import 'citysmart/theme.dart';
 import 'providers/user_provider.dart';
 import 'screens/auth_screen.dart';
 import 'screens/charging_map_screen.dart';
@@ -21,10 +22,10 @@ import 'screens/welcome_screen.dart';
 import 'services/user_repository.dart';
 import 'screens/history_receipts_screen.dart';
 import 'screens/maintenance_report_screen.dart';
-import 'screens/charging_map_screen.dart';
 import 'screens/garbage_schedule_screen.dart';
 import 'screens/city_settings_screen.dart';
 import 'services/notification_service.dart';
+import 'screens/alternate_side_parking_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,13 +45,7 @@ class MKEParkApp extends StatelessWidget {
       create: (_) => UserProvider(userRepository: userRepository)..initialize(),
       child: MaterialApp(
         title: 'MKEPark',
-        theme: ThemeData(
-          primaryColor: const Color(0xFF003E29),
-          scaffoldBackgroundColor: const Color(0xFF003E29),
-          textTheme: const TextTheme(
-            bodyMedium: TextStyle(color: Colors.white),
-          ),
-        ),
+        theme: CSTheme.theme(),
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
@@ -75,6 +70,8 @@ class MKEParkApp extends StatelessWidget {
           '/predictions': (context) => const ChargingMapScreen(),
           '/garbage': (context) => const GarbageScheduleScreen(),
           '/city-settings': (context) => const CitySettingsScreen(),
+          '/alternate-parking': (context) =>
+              const AlternateSideParkingScreen(),
         },
       ),
     );
