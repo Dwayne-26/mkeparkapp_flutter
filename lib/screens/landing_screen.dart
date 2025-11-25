@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../citysmart/theme.dart';
 import '../providers/user_provider.dart';
 import '../services/risk_alert_service.dart';
+import '../services/alternate_side_parking_service.dart';
 
 class LandingScreen extends StatelessWidget {
   @override
@@ -20,14 +22,14 @@ class LandingScreen extends StatelessWidget {
         RiskAlertService.instance.start(provider);
         if (!isGuest && profile == null) {
           return Scaffold(
-            backgroundColor: const Color(0xFF203731),
+            backgroundColor: CSTheme.background,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Please sign in to view your dashboard.',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: CSTheme.text),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -55,75 +57,21 @@ class LandingScreen extends StatelessWidget {
             : (profile?.preferences.parkingNotifications ?? false
                 ? 'Enabled'
                 : 'Muted');
+        final altService = AlternateSideParkingService();
+        final addressNumber = _addressNumber(profile?.address);
+        final altStatus = altService.status(addressNumber: addressNumber);
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('CitySmart Dashboard'),
-            backgroundColor: const Color(0xFF203731),
-            actions: [
-              if (isGuest)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Chip(
-                    label: const Text('Guest'),
-                    avatar: const Icon(Icons.visibility_outlined, size: 18),
-                    backgroundColor: Colors.white,
-                  ),
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.person),
-                  onPressed: () => Navigator.pushNamed(context, '/profile'),
-                ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF203731),
+          backgroundColor: CSTheme.background,
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                color: const Color(0xFF003E29),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hello, $name',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  address,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _RiskBadge(score: provider.towRiskIndex),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Alert radius: ${provider.profile?.preferences.geoRadiusMiles ?? 5} miles',
-                        style:
-                            const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
+              _HeaderCard(
+                name: name,
+                address: address,
+                isGuest: isGuest,
+                riskScore: provider.towRiskIndex,
+                radius: provider.profile?.preferences.geoRadiusMiles ?? 5,
+                alertsLabel: alertsLabel,
               ),
               const SizedBox(height: 16),
               Wrap(
@@ -143,10 +91,13 @@ class LandingScreen extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(context, '/permit-workflow'),
                   ),
                   _OverviewTile(
-                    icon: Icons.insights,
-                    label: 'Predictions',
-                    value: 'Heatmap',
-                    onTap: () => Navigator.pushNamed(context, '/predictions'),
+                    icon: Icons.compare_arrows,
+                    label: 'Alt-side parking',
+                    value: altStatus.sideToday == ParkingSide.odd
+                        ? 'Odd side'
+                        : 'Even side',
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/alternate-parking'),
                   ),
                   _OverviewTile(
                     icon: Icons.notifications_active_outlined,
@@ -165,12 +116,6 @@ class LandingScreen extends StatelessWidget {
                     label: 'Plan',
                     value: 'Free/Plus/Pro',
                     onTap: () => Navigator.pushNamed(context, '/subscriptions'),
-                  ),
-                  _OverviewTile(
-                    icon: Icons.insights,
-                    label: 'Predictions',
-                    value: 'Heatmap',
-                    onTap: () => Navigator.pushNamed(context, '/predictions'),
                   ),
                   _OverviewTile(
                     icon: Icons.delete_outline,
@@ -262,6 +207,110 @@ class LandingScreen extends StatelessWidget {
       },
     );
   }
+
+  int _addressNumber(String? address) {
+    if (address == null) return 0;
+    final match = RegExp(r'(\\d+)').firstMatch(address);
+    if (match == null) return 0;
+    return int.tryParse(match.group(0) ?? '0') ?? 0;
+  }
+}
+
+class _HeaderCard extends StatelessWidget {
+  const _HeaderCard({
+    required this.name,
+    required this.address,
+    required this.isGuest,
+    required this.riskScore,
+    required this.radius,
+    required this.alertsLabel,
+  });
+
+  final String name;
+  final String address;
+  final bool isGuest;
+  final int riskScore;
+  final int radius;
+  final String alertsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [CSTheme.primary, CSTheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, $name',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        address,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _RiskBadge(score: riskScore),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _InfoPill(
+                  icon: Icons.radar,
+                  label: 'Alert radius: $radius mi',
+                ),
+                _InfoPill(
+                  icon: Icons.notifications_active_outlined,
+                  label: 'Alerts: $alertsLabel',
+                ),
+                if (isGuest)
+                  const _InfoPill(
+                    icon: Icons.visibility_outlined,
+                    label: 'Guest preview',
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _OverviewTile extends StatelessWidget {
@@ -280,30 +329,53 @@ class _OverviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = (MediaQuery.of(context).size.width - 40) / 2;
-    return GestureDetector(
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         width: width.clamp(150, double.infinity),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D4D3A),
-          borderRadius: BorderRadius.circular(12),
+          color: CSTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 6),
+            ),
+          ],
+          border: Border.all(color: CSTheme.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: CSTheme.primary.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: CSTheme.primary),
+            ),
             const SizedBox(height: 12),
             Text(
               value,
               style: const TextStyle(
-                color: Colors.white,
+                color: CSTheme.text,
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(color: Colors.white70)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: CSTheme.textMuted,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
@@ -326,26 +398,89 @@ class _RiskBadge extends StatelessWidget {
     } else {
       color = Colors.green;
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Chip(
-          backgroundColor: color.withOpacity(0.15),
-          label: Text(
-            'Tow risk: $score',
-            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+    final status = score >= 70
+        ? 'High risk'
+        : score >= 40
+            ? 'Moderate'
+            : 'Low';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$score',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          score >= 70
-              ? 'High risk'
-              : score >= 40
-              ? 'Moderate'
-              : 'Low',
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            status,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

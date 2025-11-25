@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../citysmart/theme.dart';
 import '../providers/user_provider.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -9,116 +10,198 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF003E29),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Consumer<UserProvider>(
-            builder: (context, provider, _) {
-              final isLoading = provider.isInitializing;
-              final isLoggedIn = provider.isLoggedIn;
-              final profile = provider.profile;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.local_parking,
-                    size: 100,
-                    color: Color(0xFFFFC107),
-                  ),
-                  const SizedBox(height: 40),
-                  const Text(
-                    'Welcome to MKEPark',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Monitor parking regulations, permits, vehicles & alerts',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (isLoggedIn && profile != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      'Signed in as ${profile.name}',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            final route = isLoggedIn ? '/landing' : '/auth';
-                            Navigator.pushReplacementNamed(context, route);
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFC107),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      isLoggedIn ? 'Go to dashboard' : 'Get Started',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!isLoggedIn) ...[
-                    OutlinedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => Navigator.pushNamed(context, '/auth'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 14,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF5E8A45),
+              Color(0xFF7CA726),
+            ],
+          ),
+        ),
+        child: Center(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Consumer<UserProvider>(
+                builder: (context, provider, _) {
+                  final isLoading = provider.isInitializing;
+                  final isLoggedIn = provider.isLoggedIn;
+                  final profile = provider.profile;
+                  return Column(
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 16,
+                              offset: Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.local_parking,
+                          size: 64,
+                          color: CSTheme.primary,
                         ),
                       ),
-                      child: const Text('Create an account'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              provider.continueAsGuest();
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/landing',
-                              );
-                            },
-                      icon: const Icon(Icons.visibility_outlined),
-                      label: const Text('Continue as guest'),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Text(
-                        'Try the dashboard without creating an account.',
-                        style: TextStyle(color: Colors.white70),
-                        textAlign: TextAlign.center,
+                      const SizedBox(height: 32),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 24,
+                              offset: Offset(0, 18),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F5E9),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.shield_outlined,
+                                          size: 18, color: CSTheme.primary),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'CitySmart',
+                                        style: TextStyle(
+                                          color: CSTheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isLoggedIn && profile != null)
+                                  const Icon(Icons.verified_user,
+                                      color: CSTheme.secondary),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Welcome to MKEPark',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: CSTheme.text,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Monitor parking rules, permits, vehicles, alerts, and city services with one calm, modern dashboard.',
+                              style: TextStyle(
+                                color:
+                                    CSTheme.text.withOpacity(0.7),
+                                fontSize: 16,
+                                height: 1.5,
+                              ),
+                            ),
+                            if (isLoggedIn && profile != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                'Signed in as ${profile.name}',
+                                style: const TextStyle(
+                                  color: CSTheme.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.dashboard_customize),
+                                onPressed: isLoading
+                                    ? null
+                                    : () {
+                                        final route =
+                                            isLoggedIn ? '/landing' : '/auth';
+                                        Navigator.pushReplacementNamed(
+                                            context, route);
+                                      },
+                                label: Text(
+                                  isLoggedIn
+                                      ? 'Go to dashboard'
+                                      : 'Get Started',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            if (!isLoggedIn) ...[
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.person_add_alt),
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => Navigator.pushNamed(
+                                          context, '/auth'),
+                                  label: const Text('Create an account'),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              TextButton.icon(
+                                onPressed: isLoading
+                                    ? null
+                                    : () {
+                                        provider.continueAsGuest();
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/landing',
+                                        );
+                                      },
+                                icon: const Icon(Icons.visibility_outlined),
+                                label: const Text('Continue as guest'),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Preview the dashboard without an account. You can sign in anytime.',
+                                style: TextStyle(
+                                  color: CSTheme.textMuted,
+                                ),
+                                textAlign: TextAlign.left,
+                              ),
+                            ] else
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pushNamed(context, '/profile'),
+                                child: const Text('Manage profile'),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ] else
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/profile'),
-                      child: const Text('Manage profile'),
-                    ),
-                ],
-              );
-            },
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
