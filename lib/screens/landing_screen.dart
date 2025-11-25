@@ -136,6 +136,13 @@ class _LandingScreenState extends State<LandingScreen> {
                     onTap: () => Navigator.pushNamed(context, '/charging'),
                   ),
                   _OverviewTile(
+                    icon: Icons.map,
+                    label: 'Parking heatmap',
+                    value: 'Predict',
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/parking-heatmap'),
+                  ),
+                  _OverviewTile(
                     icon: Icons.workspace_premium,
                     label: 'Plan',
                     value: 'Free/Plus/Pro',
