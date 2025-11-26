@@ -162,16 +162,18 @@ class HomeTile extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                   color: textColor,
+                  letterSpacing: 0.2,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
               ),
