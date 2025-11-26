@@ -15,6 +15,7 @@ class _CitySettingsScreenState extends State<CitySettingsScreen> {
   late String _cityId;
   late String _tenantId;
   late String _languageCode;
+  late List<String> _cities;
 
   @override
   void initState() {
@@ -23,6 +24,7 @@ class _CitySettingsScreenState extends State<CitySettingsScreen> {
     _cityId = provider.cityId;
     _tenantId = provider.tenantId;
     _languageCode = provider.languageCode;
+    _cities = const ['Milwaukee', 'Chicago', 'New York'];
   }
 
   @override
@@ -37,18 +39,21 @@ class _CitySettingsScreenState extends State<CitySettingsScreen> {
             children: [
               Text('City', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _cityId,
-                items: cityRulePacks
-                    .map(
-                      (city) => DropdownMenuItem(
-                        value: city.cityId,
-                        child: Text(city.displayName),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _cityId = value ?? 'default'),
-              ),
+              if (_cities.isEmpty)
+                const Center(child: CircularProgressIndicator())
+              else
+                DropdownButtonFormField<String>(
+                  value: _cityId.isNotEmpty ? _cityId : _cities.first,
+                  items: _cities
+                      .map(
+                        (city) => DropdownMenuItem(
+                          value: city,
+                          child: Text(city),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _cityId = value ?? 'default'),
+                ),
               const SizedBox(height: 12),
               Text('Tenant', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
