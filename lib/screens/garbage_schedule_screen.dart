@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../models/garbage_schedule.dart';
 import '../providers/user_provider.dart';
+import '../services/garbage_schedule_service.dart';
+import '../services/location_service.dart';
 
 class GarbageScheduleScreen extends StatefulWidget {
   const GarbageScheduleScreen({super.key});
@@ -16,6 +19,8 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
   bool _nightBefore = true;
   bool _morningOf = true;
   String _language = 'en';
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -44,6 +49,29 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
                   labelText: 'Enter address to match route',
                 ),
               ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _loading ? null : _useLocation,
+                    icon: const Icon(Icons.my_location),
+                    label: const Text('Use my location'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _loading ? null : _useAddress,
+                    icon: const Icon(Icons.search),
+                    label: const Text('Search by address'),
+                  ),
+                ],
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.orangeAccent),
+                ),
+              ],
               const SizedBox(height: 12),
               Card(
                 child: Padding(
@@ -109,21 +137,26 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              ...schedules.map(
-                (s) => Card(
-                  child: ListTile(
-                    leading: Icon(
-                      s.type == PickupType.garbage
-                          ? Icons.delete
-                          : Icons.recycling,
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (schedules.isEmpty)
+                const Text('No upcoming pickups found.')
+              else
+                ...schedules.map(
+                  (s) => Card(
+                    child: ListTile(
+                      leading: Icon(
+                        s.type == PickupType.garbage
+                            ? Icons.delete
+                            : Icons.recycling,
+                      ),
+                      title: Text(
+                        '${s.type == PickupType.garbage ? 'Garbage' : 'Recycling'} • ${s.pickupDate.month}/${s.pickupDate.day} ${s.pickupDate.hour.toString().padLeft(2, '0')}:00',
+                      ),
+                      subtitle: Text('Route ${s.routeId} • ${s.address}'),
                     ),
-                    title: Text(
-                      '${s.type == PickupType.garbage ? 'Garbage' : 'Recycling'} • ${s.pickupDate.month}/${s.pickupDate.day} ${s.pickupDate.hour.toString().padLeft(2, '0')}:00',
-                    ),
-                    subtitle: Text('Route ${s.routeId} • ${s.address}'),
                   ),
                 ),
-              ),
             ],
           ),
         );
