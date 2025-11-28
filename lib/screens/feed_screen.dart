@@ -48,7 +48,7 @@ class _FeedBodyState extends State<_FeedBody> {
 
   void _loadBanner() {
     const appId = 'ca-app-pub-2009498889741048~9019853313'; // AdMob App ID
-    final unitId = AdService.bannerTestUnit(); // replace with real banner unit ID
+    const unitId = 'ca-app-pub-2009498889741048/5020898555'; // real banner unit ID
     AdService.instance.initialize(appId: appId).then((_) {
       setState(() {
         _bannerAd = AdService.instance.createBanner(
