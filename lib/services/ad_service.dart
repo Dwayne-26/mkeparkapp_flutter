@@ -21,15 +21,13 @@ class AdService {
     _initialized = true;
   }
 
-  BannerAd createBanner({
+  BannerAd? createBanner({
     required String unitId,
     required AdSize size,
     void Function(Ad)? onLoaded,
     void Function(Ad, LoadAdError)? onFailed,
   }) {
-    if (kIsWeb) {
-      return null as dynamic;
-    }
+    if (kIsWeb) return null;
     final ad = BannerAd(
       adUnitId: unitId,
       size: size,
