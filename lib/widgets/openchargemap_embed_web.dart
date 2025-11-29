@@ -3,7 +3,7 @@
 import 'dart:html';
 import 'dart:ui' as ui;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 bool _ocmRegistered = false;
 
