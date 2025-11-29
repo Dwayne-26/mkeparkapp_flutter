@@ -397,7 +397,12 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
               const SizedBox(height: 12),
               Text(
                 'Nearby stations',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                  letterSpacing: 0.2,
+                ),
               ),
               const SizedBox(height: 12),
               ...stations.map(
