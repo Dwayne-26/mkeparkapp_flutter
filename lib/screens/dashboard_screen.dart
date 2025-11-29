@@ -55,7 +55,7 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.notifications_active_outlined,
                     title: 'Risk & reminders',
                     subtitle: 'Alerts, radius, preferences',
-                    onTap: () => Navigator.pushNamed(context, '/alerts'),
+                    onTap: () => Navigator.pushNamed(context, '/preferences'),
                   ),
                   FutureBuilder<String>(
                     future: _resolveAltSubtitle(provider),
