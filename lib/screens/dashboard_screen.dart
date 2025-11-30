@@ -59,7 +59,7 @@ class DashboardScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const RiskRemindersScreen(),
+                        builder: (_) => const AlertsLandingScreen(),
                       ),
                     ),
                   ),
