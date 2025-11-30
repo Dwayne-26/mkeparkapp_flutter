@@ -14,6 +14,22 @@ class WeatherSummary {
   final int probabilityOfPrecip;
 }
 
+class WeatherAlert {
+  WeatherAlert({
+    required this.event,
+    required this.headline,
+    required this.severity,
+    required this.effective,
+    required this.expires,
+  });
+
+  final String event;
+  final String headline;
+  final String severity;
+  final DateTime? effective;
+  final DateTime? expires;
+}
+
 class WeatherService {
   Future<WeatherSummary?> fetchCurrent({
     required double lat,
@@ -51,6 +67,40 @@ class WeatherService {
       shortForecast: short,
       probabilityOfPrecip: precip,
     );
+  }
+
+  Future<List<WeatherAlert>> fetchAlerts({
+    required double lat,
+    required double lng,
+  }) async {
+    final alertsUri = Uri.parse(
+        'https://api.weather.gov/alerts/active?point=${lat.toStringAsFixed(4)},${lng.toStringAsFixed(4)}');
+    final resp = await http
+        .get(alertsUri, headers: _headers())
+        .timeout(const Duration(seconds: 10));
+    if (resp.statusCode != 200) return const [];
+    final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    final features = data['features'] as List<dynamic>? ?? const [];
+    return features.map((f) => _mapAlert(f)).whereType<WeatherAlert>().toList();
+  }
+
+  WeatherAlert? _mapAlert(dynamic f) {
+    if (f is! Map<String, dynamic>) return null;
+    final props = f['properties'] as Map<String, dynamic>? ?? {};
+    return WeatherAlert(
+      event: (props['event'] as String?) ?? 'Weather alert',
+      headline: (props['headline'] as String?) ??
+          (props['description'] as String?) ??
+          'Alert in your area',
+      severity: (props['severity'] as String?) ?? 'Unknown',
+      effective: _parseDate(props['effective']),
+      expires: _parseDate(props['expires']),
+    );
+  }
+
+  DateTime? _parseDate(dynamic v) {
+    if (v is String) return DateTime.tryParse(v);
+    return null;
   }
 
   Map<String, String> _headers() => const {

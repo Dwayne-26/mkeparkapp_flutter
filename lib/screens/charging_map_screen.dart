@@ -37,6 +37,7 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
   bool _includeWeather = true;
   _PredictionMode _mode = _PredictionMode.heatmap;
   WeatherSummary? _weatherSummary;
+  List<WeatherAlert> _weatherAlerts = const [];
   double _currentLat = 43.0389;
   double _currentLng = -87.9065;
 
@@ -177,6 +178,56 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
               ],
             ),
           ),
+          if (_weatherAlerts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Card(
+                color: Colors.red.shade50,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Colors.red),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${_weatherAlerts.length} weather alert${_weatherAlerts.length > 1 ? 's' : ''}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ..._weatherAlerts.take(2).map(
+                        (a) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '${a.event} • ${a.severity}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_weatherAlerts.length > 2)
+                        Text(
+                          '+${_weatherAlerts.length - 2} more',
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           // OpenChargeMap embed (web) or CTA (mobile/desktop).
           OpenChargeMapEmbed(onOpenExternal: _openExternalMap),
           Expanded(
@@ -400,9 +451,12 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
     try {
       final summary =
           await _weather.fetchCurrent(lat: _currentLat, lng: _currentLng);
+      final alerts =
+          await _weather.fetchAlerts(lat: _currentLat, lng: _currentLng);
       if (!mounted) return;
       setState(() {
         _weatherSummary = summary;
+        _weatherAlerts = alerts;
       });
     } catch (_) {
       // ignore and leave weather null
