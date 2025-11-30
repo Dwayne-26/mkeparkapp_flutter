@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/permit.dart';
 import '../models/payment_receipt.dart';
@@ -25,6 +26,7 @@ import '../services/api_client.dart';
 import '../data/sample_schedules.dart';
 import '../services/notification_service.dart';
 import '../data/city_rule_packs.dart';
+import '../services/location_service.dart';
 
 class UserProvider extends ChangeNotifier {
   UserProvider({required UserRepository userRepository})
@@ -43,6 +45,7 @@ class UserProvider extends ChangeNotifier {
   List<SightingReport> _sightings = const [];
   List<PaymentReceipt> _receipts = const [];
   AdPreferences _adPreferences = const AdPreferences();
+  DateTime? _alertsMutedUntil;
   SubscriptionTier _tier = SubscriptionTier.free;
   List<MaintenanceReport> _maintenanceReports = const [];
   List<GarbageSchedule> _garbageSchedules = const [];
@@ -62,6 +65,7 @@ class UserProvider extends ChangeNotifier {
       _profile?.sweepingSchedules ?? _guestSweepingSchedules;
   List<Ticket> get tickets => _tickets;
   List<SightingReport> get sightings => _sightings;
+  DateTime? get alertsMutedUntil => _alertsMutedUntil;
   List<PaymentReceipt> get receipts => _receipts;
   AdPreferences get adPreferences =>
       _profile?.adPreferences ?? _adPreferences;
@@ -139,6 +143,16 @@ class UserProvider extends ChangeNotifier {
     _guestPermits = const [];
     _guestReservations = const [];
     _guestSweepingSchedules = const [];
+    notifyListeners();
+  }
+
+  void muteAlerts(Duration duration) {
+    _alertsMutedUntil = DateTime.now().add(duration);
+    notifyListeners();
+  }
+
+  void unmuteAlerts() {
+    _alertsMutedUntil = null;
     notifyListeners();
   }
 
@@ -278,7 +292,47 @@ class UserProvider extends ChangeNotifier {
     _sightings = deduped;
     await _repository.saveSightings(_sightings);
     _reportApi.sendSighting(report);
+    _maybeNotifyNearbySighting(report);
     notifyListeners();
+  }
+
+  Future<void> _maybeNotifyNearbySighting(SightingReport report) async {
+    if (report.latitude == null || report.longitude == null) return;
+    final prefs = _profile?.preferences ?? UserPreferences.defaults();
+    if (_alertsMutedUntil != null &&
+        DateTime.now().isBefore(_alertsMutedUntil!)) {
+      return;
+    }
+    final radiusMiles = prefs.geoRadiusMiles.toDouble();
+    // Respect toggles: tow alerts for tow, parkingNotifications for enforcer.
+    if (report.type == SightingType.towTruck && !prefs.towAlerts) return;
+    if (report.type == SightingType.parkingEnforcer &&
+        !prefs.parkingNotifications) return;
+
+    try {
+      final pos = await LocationService().getCurrentPosition();
+      if (pos == null) return;
+      final meters = Geolocator.distanceBetween(
+        pos.latitude,
+        pos.longitude,
+        report.latitude!,
+        report.longitude!,
+      );
+      final miles = meters / 1609.34;
+      if (miles <= radiusMiles) {
+        final title = report.type == SightingType.towTruck
+            ? 'Tow sighting nearby'
+            : 'Enforcer sighting nearby';
+        final body =
+            '${report.location} • ${miles.toStringAsFixed(1)} mi away';
+        await NotificationService.instance.showLocal(
+          title: title,
+          body: body,
+        );
+      }
+    } catch (_) {
+      // Silent failure; best-effort.
+    }
   }
 
   PermitEligibilityResult evaluatePermitEligibility({

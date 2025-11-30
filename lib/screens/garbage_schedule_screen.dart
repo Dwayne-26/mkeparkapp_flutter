@@ -53,16 +53,20 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: _loading ? null : _useLocation,
-                    icon: const Icon(Icons.my_location),
-                    label: const Text('Use my location'),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _loading ? null : _useLocation,
+                      icon: const Icon(Icons.my_location),
+                      label: const Text('Use my location'),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _loading ? null : _useAddress,
-                    icon: const Icon(Icons.search),
-                    label: const Text('Search by address'),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _loading ? null : _useAddress,
+                      icon: const Icon(Icons.search),
+                      label: const Text('Search by address'),
+                    ),
                   ),
                 ],
               ),
@@ -197,7 +201,8 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load schedule: $e';
+          _error =
+              'Failed to load schedule. Please retry or enter an address. Details: $e';
         });
       }
     } finally {

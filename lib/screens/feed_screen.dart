@@ -60,8 +60,10 @@ class _FeedBodyState extends State<_FeedBody> {
           ad.dispose();
         },
       );
-      _bannerAd = ad;
-      setState(() {});
+      if (ad != null) {
+        _bannerAd = ad;
+        setState(() {});
+      }
     });
   }
 
@@ -89,7 +91,7 @@ class _FeedBodyState extends State<_FeedBody> {
           ),
         ),
         const SizedBox(height: 16),
-        if (_bannerAd != null)
+        if (!kIsWeb && _bannerAd != null)
           SizedBox(
             height: _bannerAd!.size.height.toDouble(),
             width: _bannerAd!.size.width.toDouble(),

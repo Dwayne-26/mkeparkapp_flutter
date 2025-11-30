@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,10 @@ import '../models/parking_prediction.dart';
 import '../providers/user_provider.dart';
 import '../services/api_client.dart';
 import '../services/prediction_api_service.dart';
+import '../widgets/openchargemap_embed.dart';
+import '../services/location_service.dart';
+import '../services/open_charge_map_service.dart';
+import '../services/weather_service.dart';
 
 class ChargingMapScreen extends StatefulWidget {
   const ChargingMapScreen({super.key});
@@ -18,17 +23,31 @@ class ChargingMapScreen extends StatefulWidget {
 }
 
 class _ChargingMapScreenState extends State<ChargingMapScreen> {
+  final _ocm = OpenChargeMapService();
+  final _weather = WeatherService();
   bool _showFastOnly = false;
   bool _showAvailableOnly = true;
+  bool _loadingStations = true;
+  String? _stationError;
+  List<EVStation> _stations = mockEvStations;
   EVStation? _selected;
   List<ParkingPrediction> _predictions = const [];
   bool _loadingPredictions = false;
   bool _includeEvents = true;
   bool _includeWeather = true;
   _PredictionMode _mode = _PredictionMode.heatmap;
+  WeatherSummary? _weatherSummary;
+  List<WeatherAlert> _weatherAlerts = const [];
+  double _currentLat = 43.0389;
+  double _currentLng = -87.9065;
 
-  List<EVStation> get _stations {
-    return mockEvStations.where((station) {
+  bool get _hasFastStation =>
+      _stations.any((s) => s.hasFastCharging && s.maxPowerKw >= 50);
+  bool get _hasAvailabilityVariance =>
+      _stations.any((s) => !s.hasAvailability);
+
+  List<EVStation> _filterStations() {
+    return _stations.where((station) {
       if (_showFastOnly && !station.hasFastCharging) return false;
       if (_showAvailableOnly && !station.hasAvailability) return false;
       return true;
@@ -38,13 +57,14 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStations());
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadPredictions());
   }
 
   @override
   Widget build(BuildContext context) {
-    const center = LatLng(43.0389, -87.9065); // Milwaukee
-    final stations = _stations;
+    const center = LatLng(43.0389, -87.9065); // Default to Milwaukee
+    final stations = _filterStations();
     final predictions = _predictions;
     return Scaffold(
       appBar: AppBar(
@@ -68,20 +88,49 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                FilterChip(
-                  selected: _showAvailableOnly,
-                  label: const Text('Only available'),
-                  avatar: const Icon(Icons.ev_station, size: 18),
-                  onSelected: (value) =>
-                      setState(() => _showAvailableOnly = value),
-                ),
+                if (_weatherSummary != null) ...[
+                  const Icon(Icons.cloud, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_weatherSummary!.temperatureF.toStringAsFixed(0)}°F • ${_weatherSummary!.shortForecast} (${_weatherSummary!.probabilityOfPrecip}% rain)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (_hasAvailabilityVariance)
+                  FilterChip(
+                    selected: _showAvailableOnly,
+                    label: const Text('Only available'),
+                    avatar: const Icon(Icons.ev_station, size: 18),
+                    onSelected: (value) =>
+                        setState(() => _showAvailableOnly = value),
+                  )
+                else
+                  const Text(
+                    'Live availability not provided',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 const SizedBox(width: 8),
-                FilterChip(
-                  selected: _showFastOnly,
-                  label: const Text('50kW+'),
-                  avatar: const Icon(Icons.flash_on, size: 18),
-                  onSelected: (value) => setState(() => _showFastOnly = value),
-                ),
+                if (_hasFastStation)
+                  FilterChip(
+                    selected: _showFastOnly,
+                    label: const Text('50kW+'),
+                    avatar: const Icon(Icons.flash_on, size: 18),
+                    onSelected: (value) =>
+                        setState(() => _showFastOnly = value),
+                  )
+                else
+                  const Text(
+                    'No fast chargers nearby',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 const Spacer(),
                 Text('${stations.length} spots',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -129,6 +178,58 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
               ],
             ),
           ),
+          if (_weatherAlerts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Card(
+                color: Colors.red.shade50,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Colors.red),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${_weatherAlerts.length} weather alert${_weatherAlerts.length > 1 ? 's' : ''}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ..._weatherAlerts.take(2).map(
+                        (a) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '${a.event} • ${a.severity}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_weatherAlerts.length > 2)
+                        Text(
+                          '+${_weatherAlerts.length - 2} more',
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          // OpenChargeMap embed (web) or CTA (mobile/desktop).
+          OpenChargeMapEmbed(onOpenExternal: _openExternalMap),
           Expanded(
             child: FlutterMap(
               options: const MapOptions(
@@ -201,6 +302,17 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
               station: _selected!,
               onDirections: () => _openDirections(_selected!),
               onClose: () => setState(() => _selected = null),
+            ),
+          if (_loadingStations)
+            const LinearProgressIndicator(minHeight: 3),
+          if (_stationError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Text(
+                _stationError!,
+                style:
+                    const TextStyle(color: Colors.redAccent, fontSize: 12),
+              ),
             ),
           if (_loadingPredictions)
             const LinearProgressIndicator(minHeight: 3),
@@ -295,6 +407,62 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
     });
   }
 
+  Future<void> _loadStations() async {
+    setState(() {
+      _loadingStations = true;
+      _stationError = null;
+    });
+
+    double lat = 43.0389;
+    double lng = -87.9065;
+
+    try {
+      final pos = await LocationService().getCurrentPosition();
+      if (pos != null) {
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
+    } catch (_) {
+      // ignore and use defaults
+    }
+    _currentLat = lat;
+    _currentLng = lng;
+
+    try {
+      final stations =
+          await _ocm.fetchStations(lat: lat, lng: lng, distanceKm: 15);
+      if (!mounted) return;
+      setState(() {
+        _stations = stations.isEmpty ? mockEvStations : stations;
+        _loadingStations = false;
+      });
+      _loadWeather();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _stationError = 'Could not load live charging stations.';
+        _stations = mockEvStations;
+        _loadingStations = false;
+      });
+    }
+  }
+
+  Future<void> _loadWeather() async {
+    try {
+      final summary =
+          await _weather.fetchCurrent(lat: _currentLat, lng: _currentLng);
+      final alerts =
+          await _weather.fetchAlerts(lat: _currentLat, lng: _currentLng);
+      if (!mounted) return;
+      setState(() {
+        _weatherSummary = summary;
+        _weatherAlerts = alerts;
+      });
+    } catch (_) {
+      // ignore and leave weather null
+    }
+  }
+
   void _openDetails(BuildContext context) {
     final stations = _stations;
     showModalBottomSheet<void>(
@@ -318,7 +486,12 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
               const SizedBox(height: 12),
               Text(
                 'Nearby stations',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                  letterSpacing: 0.2,
+                ),
               ),
               const SizedBox(height: 12),
               ...stations.map(
@@ -381,7 +554,12 @@ class _StationMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = station.hasAvailability ? Colors.green : Colors.orange;
+    final isFast = station.hasFastCharging;
+    final color = isFast
+        ? Colors.blueAccent
+        : station.hasAvailability
+            ? Colors.green
+            : Colors.orange;
     return AnimatedScale(
       scale: isSelected ? 1.1 : 1.0,
       duration: const Duration(milliseconds: 150),
@@ -416,6 +594,23 @@ class _StationMarker extends StatelessWidget {
               color: Colors.white,
             ),
           ),
+          if (isFast)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.flash_on,
+                  size: 12,
+                  color: Colors.blueAccent,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -538,5 +733,15 @@ extension on _ChargingMapScreenState {
         const SnackBar(content: Text('Could not open maps app.')),
       );
     }
+  }
+
+  Future<void> _openExternalMap() async {
+    final uri = Uri.parse('https://map.openchargemap.io/?mode=embedded');
+    await launchUrl(
+      uri,
+      mode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
+    );
   }
 }
