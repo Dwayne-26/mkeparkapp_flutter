@@ -13,6 +13,7 @@ import '../services/prediction_api_service.dart';
 import '../widgets/openchargemap_embed.dart';
 import '../services/location_service.dart';
 import '../services/open_charge_map_service.dart';
+import '../services/weather_service.dart';
 
 class ChargingMapScreen extends StatefulWidget {
   const ChargingMapScreen({super.key});
@@ -23,6 +24,7 @@ class ChargingMapScreen extends StatefulWidget {
 
 class _ChargingMapScreenState extends State<ChargingMapScreen> {
   final _ocm = OpenChargeMapService();
+  final _weather = WeatherService();
   bool _showFastOnly = false;
   bool _showAvailableOnly = true;
   bool _loadingStations = true;
@@ -34,6 +36,9 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
   bool _includeEvents = true;
   bool _includeWeather = true;
   _PredictionMode _mode = _PredictionMode.heatmap;
+  WeatherSummary? _weatherSummary;
+  double _currentLat = 43.0389;
+  double _currentLng = -87.9065;
 
   bool get _hasFastStation =>
       _stations.any((s) => s.hasFastCharging && s.maxPowerKw >= 50);
@@ -82,6 +87,20 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
+                if (_weatherSummary != null) ...[
+                  const Icon(Icons.cloud, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_weatherSummary!.temperatureF.toStringAsFixed(0)}°F • ${_weatherSummary!.shortForecast} (${_weatherSummary!.probabilityOfPrecip}% rain)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 if (_hasAvailabilityVariance)
                   FilterChip(
                     selected: _showAvailableOnly,
@@ -355,6 +374,8 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
     } catch (_) {
       // ignore and use defaults
     }
+    _currentLat = lat;
+    _currentLng = lng;
 
     try {
       final stations =
@@ -364,6 +385,7 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
         _stations = stations.isEmpty ? mockEvStations : stations;
         _loadingStations = false;
       });
+      _loadWeather();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -371,6 +393,19 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
         _stations = mockEvStations;
         _loadingStations = false;
       });
+    }
+  }
+
+  Future<void> _loadWeather() async {
+    try {
+      final summary =
+          await _weather.fetchCurrent(lat: _currentLat, lng: _currentLng);
+      if (!mounted) return;
+      setState(() {
+        _weatherSummary = summary;
+      });
+    } catch (_) {
+      // ignore and leave weather null
     }
   }
 
