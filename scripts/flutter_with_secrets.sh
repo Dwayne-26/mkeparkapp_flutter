@@ -47,6 +47,28 @@ copy_secret_file "${FIREBASE_MACOS_GOOGLE_SERVICE_INFO_PATH:-}" \
   "$ROOT_DIR/macos/Runner/GoogleService-Info.plist" \
   "macos/GoogleService-Info.plist"
 
+strip_google_ads_native_templates() {
+  if ! command -v dart >/dev/null 2>&1; then
+    return
+  fi
+  local cache
+  cache=$(dart pub cache path 2>/dev/null || true)
+  if [[ -z "$cache" ]]; then
+    return
+  fi
+  shopt -s nullglob
+  local dir
+  for dir in "$cache"/hosted/pub.dev/google_mobile_ads-*/ios/Classes/NativeTemplates; do
+    if [[ -d "$dir" ]]; then
+      echo "[google_mobile_ads] Removing native templates at $dir" >&2
+      rm -rf "$dir"
+    fi
+  done
+  shopt -u nullglob
+}
+
+strip_google_ads_native_templates
+
 declare -a dart_defines=()
 add_define() {
   local key="$1"
