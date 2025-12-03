@@ -1,3 +1,95 @@
-# mkeparkapp_flutter
+# MKEPark Flutter
 
-mkeparkapp
+CitySmart’s MKEPark experience is a cross-platform Flutter app focused on
+parking insights, ticket reminders, and municipal workflows for Milwaukee
+drivers. This repository contains:
+
+- The Flutter client (Android, iOS, web, desktop stubs).
+- Backend scaffolding (FastAPI stub under `backend/`) used for development.
+- Tooling to manage Firebase secrets, CI builds, and automated versioning.
+
+## Highlights
+- 🚗 Real-time parking risk indicators, permit workflows, and reporting flows.
+- 🔔 Firebase Cloud Messaging integration for alerts and local notifications.
+- 🔒 Secrets-managed builds via `scripts/flutter_with_secrets.sh` so no Firebase
+  credentials live in git.
+- 🧪 GitHub Actions pipelines for Android/iOS builds (`mobile_build.yml`).
+- 🔁 Automatic pubspec version bumps on commits to `main`
+  (`.github/workflows/auto_version.yml`).
+
+## Requirements
+- Flutter `3.35.7` (or whichever version you pin in `env.FLUTTER_VERSION`).
+- Dart SDK ≥ `3.9.2`.
+- Xcode `16.1` (for iOS builds) with the iOS 18.1 platform installed.
+- Android SDK + NDK 27, CMake 3.22, Java 17 toolchain.
+- Firebase CLI (for App Distribution/beta deployments).
+
+## Local Setup
+1. Install Flutter and ensure `flutter doctor` passes for your target platforms.
+2. Copy secrets template and fill in real values:
+   ```bash
+   cp .env.firebase.example .env.firebase
+   # edit and point to secure google-services.json / GoogleService-Info.plist files
+   ```
+3. Run Flutter commands through the helper script so configs are injected:
+   ```bash
+   ./scripts/flutter_with_secrets.sh pub get
+   ./scripts/flutter_with_secrets.sh run -d ios
+   ./scripts/flutter_with_secrets.sh build apk --release
+   ```
+4. Use VS Code/Android Studio normally once the native config files are copied.
+
+## Firebase Secrets & CI
+- Sensitive files (`android/app/google-services.json`,
+  `ios/Runner/GoogleService-Info.plist`, etc.) live outside git in `.secrets/`.
+- `.env.firebase` stores all `--dart-define` values and file paths. It is
+  git-ignored; share via secure channels only.
+- `docs/SECRETS.md` describes how to encode these secrets for GitHub Actions.
+- GitHub secrets expected by `mobile_build.yml`:
+  - `FIREBASE_ENV_FILE` – entire `.env.firebase`.
+  - `ANDROID_GOOGLE_SERVICES_JSON` – base64 of `google-services.json`.
+  - `IOS_GOOGLE_SERVICE_INFO_PLIST` – base64 of `GoogleService-Info.plist`.
+
+## Automated Versioning
+- Every push to `main` triggers `.github/workflows/auto_version.yml`.
+- `scripts/bump_version.py` increments the `pubspec.yaml` version line
+  (patch + build number) and commits back using the GitHub Actions bot.
+- Skip the bump by adding `[skip version]` to your commit message or pushing
+  from a branch other than `main`.
+- Manual bumps remain possible—just edit `pubspec.yaml` before merging.
+
+## CI/CD Overview
+- **`mobile_build.yml`**  
+  Builds Android release APKs (Ubuntu runners) and iOS unsigned IPAs (macOS 15
+  runners + Xcode 16.1). Artifacts are uploaded for download/testing.
+- **`auto_version.yml`**  
+  Runs immediately after merges to `main` so the repo always has a fresh build
+  number.
+- Extend either workflow with Fastlane or Firebase App Distribution to push QA
+  builds. Add steps after the build stage:
+  ```bash
+  firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
+    --app <ANDROID_FIREBASE_APP_ID> --groups beta --release-notes "Build $GITHUB_RUN_NUMBER"
+  ```
+
+## Useful Scripts
+- `scripts/flutter_with_secrets.sh` – wraps any `flutter` command, copies secret
+  config files, and forwards all Firebase dart-defines.
+- `scripts/bump_version.py` – increments the `pubspec.yaml` version string.
+- `scripts/create_citysmart_bundle.sh` – exports assets for marketing demos.
+
+## Project Structure
+- `lib/` – Flutter code organized by screens, services, providers, theme.
+- `backend/` – FastAPI health check stub for local integration tests.
+- `docs/` – Integration + secrets documentation.
+- `.github/workflows/` – CI definitions (build + auto versioning).
+
+## Next Steps / Deployment
+- Configure Firebase App Distribution (or Fastlane) for Android/iOS to send
+  builds to testers.
+- Add signing credentials to GitHub secrets if you plan to upload automatically
+  to Google Play/App Store.
+- Wire the `backend/` API routes to live services for parking predictions,
+  device registration, and reporting.
+
+Happy building! 🚀
