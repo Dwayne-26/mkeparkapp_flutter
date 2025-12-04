@@ -61,10 +61,10 @@ workflows:
           if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" ]]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
             cat <<EOF > android/key.properties
-storePassword=${ANDROID_KEYSTORE_PASSWORD}
-keyPassword=${ANDROID_KEY_PASSWORD}
-keyAlias=${ANDROID_KEY_ALIAS}
-storeFile=../app/upload-keystore.jks
+            storePassword=${ANDROID_KEYSTORE_PASSWORD}
+            keyPassword=${ANDROID_KEY_PASSWORD}
+            keyAlias=${ANDROID_KEY_ALIAS}
+            storeFile=../app/upload-keystore.jks
 EOF
           else
             echo "ANDROID_KEYSTORE_BASE64 not set. Building with debug keystore." >&2
