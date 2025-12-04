@@ -34,18 +34,12 @@ import 'screens/dashboard_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/feed_screen.dart';
 import 'theme/app_theme.dart';
-import 'services/ad_service.dart';
 import 'screens/risk_reminders_screen.dart';
 import 'screens/alerts_landing_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  if (!kIsWeb) {
-    await AdService.instance.initialize(
-      appId: 'ca-app-pub-2009498889741048~9019853313',
-    );
-  }
   await NotificationService.instance.initialize();
   final repository = await UserRepository.create();
   runApp(MKEParkApp(userRepository: repository));
