@@ -49,17 +49,40 @@ drivers. This repository contains:
   - `FIREBASE_ENV_FILE` – entire `.env.firebase`.
   - `ANDROID_GOOGLE_SERVICES_JSON` – base64 of `google-services.json`.
   - `IOS_GOOGLE_SERVICE_INFO_PLIST` – base64 of `GoogleService-Info.plist`.
-- Codemagic users can run
+
+## Codemagic CI/CD
+- GitHub Actions workflows are paused (only manual `workflow_dispatch`) because
+  Codemagic now handles builds/releases. Use `.github/workflows/...` manually
+  if needed.
+- `codemagic.yaml` defines two workflows:
+  - `ios_release`: builds with Xcode 16.2, signs using the env vars
+    `IOS_DISTRIBUTION_CERTIFICATE`, `IOS_CERTIFICATE_PASSWORD`,
+    `IOS_PROVISIONING_PROFILE`, and publishes to the App Store via
+    `APP_STORE_CONNECT_*` variables.
+  - `android_release`: restores Firebase secrets, optionally decodes an Android
+    keystore (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`,
+    `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`), and produces both AAB
+    and APK artifacts.
+- Recommended Codemagic variable groups:
+  - `firebase-secrets`: `FIREBASE_ENV_FILE`,
+    `ANDROID_GOOGLE_SERVICES_JSON`, `IOS_GOOGLE_SERVICE_INFO_PLIST`.
+  - `ios-signing`: `IOS_DISTRIBUTION_CERTIFICATE`,
+    `IOS_CERTIFICATE_PASSWORD`, `IOS_PROVISIONING_PROFILE`.
+  - `app-store-connect`: `APP_STORE_CONNECT_APPLE_ID`,
+    `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`,
+    `APP_STORE_CONNECT_PRIVATE_KEY`, `APP_STORE_CONNECT_APP_ID`.
+  - `android-signing` (optional): `ANDROID_KEYSTORE_BASE64`,
+    `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+- Push Firebase secrets to Codemagic via API:
   ```bash
+  export CODEMAGIC_TOKEN=...  # Generate under Codemagic user settings
   python scripts/codemagic_sync.py \
-    --app-id YOUR_CODEMAGIC_APP_ID \
-    --token $CODEMAGIC_TOKEN \
+    --app-id YOUR_APP_ID \
+    --token "$CODEMAGIC_TOKEN" \
     --env-file .env.firebase \
     --android-json android/app/google-services.json \
     --ios-plist ios/Runner/GoogleService-Info.plist
   ```
-  to push the same secrets via Codemagic's REST API (all variables are marked
-  secure automatically).
 
 ## Automated Versioning
 - Every push to `main` triggers `.github/workflows/auto_version.yml`.
