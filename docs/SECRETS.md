@@ -23,7 +23,10 @@ local workstation) is responsible for copying them into place before running
    example file assumes you store them under `.secrets/firebase/<platform>/`
    so scripts and `python scripts/doctor.py` all look in one place. The same
    file now also holds App Store Connect values (`APP_STORE_CONNECT_API_KEY_ID`
-   and `APP_STORE_CONNECT_API_ISSUER`) for the iOS upload helper.
+   and `APP_STORE_CONNECT_API_ISSUER`) for the iOS upload helper. For Flutter
+   web, copy `web/firebase-config.example.json` to `web/firebase-config.json`
+   and paste the Firebase Web SDK values so the dev server can serve them
+   without dart-defines.
 3. Run Flutter commands through the wrapper script so secrets are injected,
    for example:
 

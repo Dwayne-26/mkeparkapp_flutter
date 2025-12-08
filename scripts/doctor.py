@@ -14,6 +14,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 ENV_FILE = ROOT_DIR / ".env.firebase"
 IOS_BUNDLE_ID = "com.mkeparkapp.app"
 IOS_GOOGLE_PLIST = ROOT_DIR / "ios" / "Runner" / "GoogleService-Info.plist"
+WEB_CONFIG = ROOT_DIR / "web" / "firebase-config.json"
+WEB_CONFIG_EXAMPLE = ROOT_DIR / "web" / "firebase-config.example.json"
 
 REQUIRED_ENV_KEYS = [
     "FIREBASE_IOS_API_KEY",
@@ -44,6 +46,7 @@ def main() -> int:
         check_env_keys(env_values)
         check_secret_paths(env_values)
     check_ios_runner_plist(env_values)
+    check_web_config()
     print()
     if had_failure:
         print("❌  Issues found. See messages above.")
@@ -154,6 +157,22 @@ def check_ios_runner_plist(env_values: Dict[str, str]) -> None:
         record(False, "GoogleService-Info.plist has a placeholder GOOGLE_APP_ID.")
     else:
         record(True, "GoogleService-Info.plist contains a GOOGLE_APP_ID.")
+
+
+def check_web_config() -> None:
+    record_header("Checking web/firebase-config.json")
+    if WEB_CONFIG.exists():
+        record(True, f"Found {WEB_CONFIG}")
+    elif WEB_CONFIG_EXAMPLE.exists():
+        record(
+            True,
+            "web/firebase-config.json missing (copy firebase-config.example.json and fill it in to enable Firebase on web).",
+        )
+    else:
+        record(
+            True,
+            "web/firebase-config.json missing (no example file found). Web builds will need manual dart-defines.",
+        )
 
 
 def load_env(path: Path) -> Dict[str, str]:

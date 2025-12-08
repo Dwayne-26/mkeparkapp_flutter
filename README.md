@@ -58,6 +58,11 @@ drivers. This repository contains:
   `codemagic_code_sign.p12`, `J8U8FW3PA8_*.mobileprovision`, and any App Store
   Connect API keys used by Codemagic. Use `scripts/codemagic_sync.py` to push
   these to Codemagic groups when needed.
+- `web/firebase-config.json` – for Flutter web builds, copy
+  `web/firebase-config.example.json` to `web/firebase-config.json` and paste in
+  the Firebase Web SDK values (API key, project ID, etc.). This file is
+  git-ignored but read at runtime so you don’t need dart defines for the web
+  target.
 - `~/.private_keys/AuthKey_<KEYID>.p8` – Apple requires App Store Connect API
   keys for `xcrun altool` builds to live in one of their default directories.
   Keep the `.p8` file out of the repo (the git-ignored `private_keys/` folder is
