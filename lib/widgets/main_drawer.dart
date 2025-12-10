@@ -19,7 +19,7 @@ class MainDrawer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'MKE Parking',
+                    'MKE CitySmart',
                     style: textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -27,7 +27,7 @@ class MainDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'CitySmart tools',
+                    'MKE CitySmart tools',
                     style: textTheme.bodyMedium?.copyWith(
                       color: Colors.white70,
                     ),
@@ -40,7 +40,7 @@ class MainDrawer extends StatelessWidget {
               title: const Text('Dashboard'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/landing');
+                Navigator.pushReplacementNamed(context, '/dashboard');
               },
             ),
             ListTile(
@@ -52,18 +52,6 @@ class MainDrawer extends StatelessWidget {
                   context,
                   '/auth',
                   arguments: const {'tab': 0},
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_add_alt),
-              title: const Text('Create account'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(
-                  context,
-                  '/auth',
-                  arguments: const {'tab': 1},
                 );
               },
             ),

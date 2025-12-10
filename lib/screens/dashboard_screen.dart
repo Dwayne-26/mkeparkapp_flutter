@@ -7,7 +7,7 @@ import '../services/alternate_side_parking_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import 'alerts_landing_screen.dart';
-import '../widgets/main_drawer.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -17,11 +17,9 @@ class DashboardScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final provider = context.watch<UserProvider>();
 
-    return Scaffold(
-      drawer: const MainDrawer(),
-      appBar: AppBar(
-        title: const Text('CitySmart'),
-      ),
+    return CitySmartScaffold(
+      title: 'MKE CitySmart',
+      currentIndex: 0,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         child: Column(
@@ -48,23 +46,6 @@ class DashboardScreen extends StatelessWidget {
                     subtitle: 'Pickup schedules',
                     onTap: () => Navigator.pushNamed(context, '/garbage'),
                   ),
-                  HomeTile(
-                    icon: Icons.ev_station_outlined,
-                    title: 'EV Chargers',
-                    subtitle: 'Nearby stations',
-                    onTap: () => Navigator.pushNamed(context, '/charging'),
-                  ),
-                  HomeTile(
-                    icon: Icons.notifications_active_outlined,
-                    title: 'Risk & reminders',
-                    subtitle: 'Alerts, radius, preferences',
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AlertsLandingScreen(),
-                      ),
-                    ),
-                  ),
                   FutureBuilder<String>(
                     future: _resolveAltSubtitle(provider),
                     builder: (context, snapshot) {
@@ -79,6 +60,17 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       );
                     },
+                  ),
+                  HomeTile(
+                    icon: Icons.notifications_active_outlined,
+                    title: 'Risk & reminders',
+                    subtitle: 'Alerts, radius, preferences',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AlertsLandingScreen(),
+                      ),
+                    ),
                   ),
                   HomeTile(
                     icon: Icons.map,
@@ -129,14 +121,21 @@ class DashboardScreen extends StatelessWidget {
                     onTap: () =>
                         Navigator.pushNamed(context, '/city-settings'),
                   ),
+                  HomeTile(
+                    icon: Icons.ev_station_outlined,
+                    title: 'EV Chargers',
+                    subtitle: 'Nearby stations',
+                    onTap: () => Navigator.pushNamed(context, '/charging'),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            PromoBannerCard(
-              text: 'Start saving today with Auto Insurance?',
-              onTap: () => Navigator.pushNamed(context, '/subscriptions'),
-            ),
+            // Promo banner intentionally disabled; keep in place for potential future use.
+            // PromoBannerCard(
+            //   text: 'Start saving today with Auto Insurance?',
+            //   onTap: () => Navigator.pushNamed(context, '/subscriptions'),
+            // ),
           ],
         ),
       ),
@@ -246,7 +245,7 @@ class PromoBannerCard extends StatelessWidget {
 
 int _addressNumber(String? address) {
   if (address == null) return 0;
-  final match = RegExp(r'(\\d+)').firstMatch(address);
+  final match = RegExp(r'(\d+)').firstMatch(address);
   if (match == null) return 0;
   return int.tryParse(match.group(0) ?? '0') ?? 0;
 }

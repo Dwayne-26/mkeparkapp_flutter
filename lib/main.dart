@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'citysmart/branding_preview.dart';
 import 'firebase_bootstrap.dart';
@@ -161,18 +160,20 @@ class MKEParkApp extends StatelessWidget {
       )..initialize(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'MKEPark',
+        title: 'MKE CitySmart',
         theme: buildCitySmartTheme(),
-        home: const CitySmartShell(),
+        initialRoute: '/dashboard',
         routes: {
+          '/': (context) => const DashboardScreen(),
           // Pass `arguments: {'tab': 1}` to pre-select Create Account.
+          '/dashboard': (context) => const DashboardScreen(),
+          '/landing': (context) => const LandingScreen(),
           '/auth': (context) {
             final args =
                 ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
             final tab = (args?['tab'] as int?) ?? 0;
             return AuthScreen(initialTabIndex: tab);
           },
-          '/landing': (context) => LandingScreen(),
           '/parking': (context) => const ParkingScreen(),
           '/permit': (context) => const PermitScreen(),
           '/permit-workflow': (context) => const PermitWorkflowScreen(),
@@ -198,293 +199,9 @@ class MKEParkApp extends StatelessWidget {
           '/citysmart-dashboard': (context) => const DashboardScreen(),
           '/citysmart-map': (context) => const MapScreen(),
           '/citysmart-feed': (context) => const FeedScreen(),
-          '/citysmart-shell': (context) => const CitySmartShell(),
           '/feed': (context) => const FeedScreen(),
         },
       ),
     );
-  }
-}
-
-/// Bottom navigation container (Dashboard / Map / Feed)
-class CitySmartShell extends StatefulWidget {
-  const CitySmartShell({super.key});
-
-  @override
-  State<CitySmartShell> createState() => _CitySmartShellState();
-}
-
-class _CitySmartShellState extends State<CitySmartShell> {
-  int _index = 0;
-  bool _quickShown = false;
-  bool _tutorialDone = false;
-  int _tutorialStep = 0;
-  bool _welcomeChecked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showQuickStart());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWelcome());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = const [DashboardScreen(), MapScreen(), FeedScreen()];
-
-    return Scaffold(
-      body: pages[_index],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) {
-          if (_index != i) {
-            CloudLogService.instance
-                .logEvent('tab_change', data: {'tab': _tabLabel(i)});
-          }
-          setState(() => _index = i);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_list_outlined),
-            label: 'Feed',
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showQuickStart() {
-    if (_quickShown || _tutorialDone) return;
-    _quickShown = true;
-    CloudLogService.instance.logEvent('quick_start_prompt');
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Quick start',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: kCitySmartText,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      _tutorialDone = true;
-                      Navigator.pop(ctx);
-                    },
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _TutorialStepContent(step: _tutorialStep),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: _tutorialStep == 0
-                        ? null
-                        : () => setState(() {
-                            _tutorialStep--;
-                          }),
-                    child: const Text('Back'),
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      if (_tutorialStep < 2) {
-                        setState(() {
-                          _tutorialStep++;
-                        });
-                      } else {
-                        _tutorialDone = true;
-                        Navigator.pop(ctx);
-                      }
-                    },
-                    child: Text(_tutorialStep < 2 ? 'Next' : 'Done'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _maybeShowWelcome() async {
-    if (_welcomeChecked) return;
-    _welcomeChecked = true;
-    final prefs = await SharedPreferences.getInstance();
-    final seen = prefs.getBool('seen_welcome_v1') ?? false;
-    if (seen || !mounted) return;
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: kCitySmartCard,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome to CitySmart',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Start with the Dashboard tiles to explore Parking, Alt-side, Heatmap, and Alerts. You can change city/language anytime in City settings.',
-                  style: TextStyle(color: kCitySmartText),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () async {
-                      await prefs.setBool('seen_welcome_v1', true);
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                    },
-                    child: const Text('Get started'),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefs.setBool('seen_welcome_v1', true);
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text('Skip'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _tabLabel(int index) {
-    switch (index) {
-      case 0:
-        return 'dashboard';
-      case 1:
-        return 'map';
-      case 2:
-        return 'feed';
-      default:
-        return 'unknown';
-    }
-  }
-}
-
-class _QuickBullet extends StatelessWidget {
-  const _QuickBullet(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '• ',
-            style: TextStyle(
-              color: kCitySmartText,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: kCitySmartText,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TutorialStepContent extends StatelessWidget {
-  const _TutorialStepContent({required this.step});
-  final int step;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (step) {
-      case 0:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _QuickBullet(
-              'Use Dashboard tiles for Parking, Alerts, Heatmap, and Alt-side parking.',
-            ),
-            _QuickBullet(
-              'Parking tile shows today’s side; heatmap shows likely open spots.',
-            ),
-          ],
-        );
-      case 1:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _QuickBullet(
-              'Map tab shows the charging map; add parking layers as needed.',
-            ),
-            _QuickBullet(
-              'Feed tab: alerts + sponsored items. Tap for details.',
-            ),
-          ],
-        );
-      default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _QuickBullet(
-              'Enable ticket/tow alerts in Preferences for automatic notifications.',
-            ),
-            _QuickBullet(
-              'Report enforcer/tow sightings to improve risk alerts.',
-            ),
-          ],
-        );
-    }
   }
 }

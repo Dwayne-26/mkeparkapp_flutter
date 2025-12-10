@@ -8,7 +8,7 @@ class BrandingPreviewPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'CitySmart Branding Preview',
+          'MKE CitySmart Branding Preview',
           style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700),
         ),
         backgroundColor: const Color(0xFF7CA726),
@@ -64,7 +64,7 @@ class _Header extends StatelessWidget {
       ),
       child: const Center(
         child: Text(
-          'CitySmart',
+          'MKE CitySmart',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w700,

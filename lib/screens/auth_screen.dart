@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key, this.initialTabIndex = 0});
@@ -53,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _showMessage(error);
       return;
     }
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Future<void> _handleRegister() async {
@@ -72,14 +73,14 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
     _showMessage('Account created! You are now signed in.');
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Future<void> _continueAsGuest() async {
     final provider = context.read<UserProvider>();
     await provider.continueAsGuest();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Future<void> _handleGoogle() async {
@@ -96,7 +97,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _showMessage(error);
       return;
     }
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Future<void> _handlePhoneSignUp() async {
@@ -140,12 +141,12 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
       _showMessage('Phone verified and account created.');
-      Navigator.pushReplacementNamed(context, '/landing');
+      Navigator.pushReplacementNamed(context, '/dashboard');
       return;
     }
     // Auto-verified path.
     _showMessage('Phone verified and account created.');
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Future<void> _handleApple() async {
@@ -162,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _showMessage(error);
       return;
     }
-    Navigator.pushReplacementNamed(context, '/landing');
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   void _showMessage(String text) {
@@ -208,15 +209,14 @@ class _AuthScreenState extends State<AuthScreen> {
     return DefaultTabController(
       length: 2,
       initialIndex: widget.initialTabIndex.clamp(0, 1),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Account Access'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Sign In'),
-              Tab(text: 'Create Account'),
-            ],
-          ),
+      child: CitySmartScaffold(
+        title: 'Account Access',
+        currentIndex: 0,
+        bottom: const TabBar(
+          tabs: [
+            Tab(text: 'Sign In'),
+            Tab(text: 'Create Account'),
+          ],
         ),
         body: TabBarView(
           children: [
@@ -269,7 +269,7 @@ class _AuthScreenState extends State<AuthScreen> {
               onSubmit: _handleRegister,
               children: [
                 Text(
-                  'Create your CitySmart account',
+                  'Create your MKE CitySmart account',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
@@ -371,7 +371,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ],
         ),
-        bottomNavigationBar: SafeArea(
+        bottomBar: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: OutlinedButton.icon(

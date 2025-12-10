@@ -219,7 +219,7 @@ class UserProvider extends ChangeNotifier {
     if (parts.isNotEmpty && parts.first.trim().isNotEmpty) {
       return parts.first.trim();
     }
-    return 'CitySmart Driver';
+    return 'MKE CitySmart Driver';
   }
 
   String _nameFromPhone(String phone) {
@@ -568,6 +568,9 @@ class UserProvider extends ChangeNotifier {
     String? email,
     String? phone,
     String? address,
+    String? formattedAddress,
+    double? addressLatitude,
+    double? addressLongitude,
     AdPreferences? adPreferences,
     SubscriptionTier? tier,
     String? cityId,
@@ -581,6 +584,9 @@ class UserProvider extends ChangeNotifier {
       email: email ?? _profile!.email,
       phone: phone ?? _profile!.phone,
       address: address ?? _profile!.address,
+      formattedAddress: formattedAddress ?? _profile!.formattedAddress,
+      addressLatitude: addressLatitude ?? _profile!.addressLatitude,
+      addressLongitude: addressLongitude ?? _profile!.addressLongitude,
       adPreferences: adPreferences ?? _profile!.adPreferences,
       tier: tier ?? _profile!.tier,
       cityId: cityId ?? _profile!.cityId,

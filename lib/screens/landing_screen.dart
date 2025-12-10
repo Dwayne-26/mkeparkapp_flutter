@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import '../services/risk_alert_service.dart';
 import '../services/alternate_side_parking_service.dart';
 import '../services/location_service.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -17,15 +18,19 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   late Future<_AltSideData> _altSideFuture;
+  static const bool _quickStartEnabled =
+      false; // Toggle on to re-enable the quick start overlay.
   bool _quickStartShown = false;
 
   @override
   void initState() {
     super.initState();
     // Initialized later in build once provider is available.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showQuickStart(context);
-    });
+    if (_quickStartEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showQuickStart(context);
+      });
+    }
   }
 
   @override
@@ -80,8 +85,9 @@ class _LandingScreenState extends State<LandingScreen> {
             : (profile?.preferences.parkingNotifications ?? false
                 ? 'Enabled'
                 : 'Muted');
-        return Scaffold(
-          backgroundColor: CSTheme.background,
+        return CitySmartScaffold(
+          title: 'MKE CitySmart',
+          currentIndex: 0,
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -243,61 +249,8 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   void _showQuickStart(BuildContext context) {
-    if (_quickStartShown) return;
+    if (!_quickStartEnabled || _quickStartShown) return;
     _quickStartShown = true;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Quick start',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: CSTheme.text,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const _QuickBullet('Check "Report sighting" to quickly log enforcers/tow trucks.'),
-              const _QuickBullet('View "Alt-side parking" to see today\'s side; we auto-detect from your location.'),
-              const _QuickBullet('Enable alerts in "Alerts" to get warnings before side flips and tow risks.'),
-              const _QuickBullet('Use "EV charging" and "Garbage day" for daily utilities.'),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Got it'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Future<_AltSideData> _resolveAltSide(UserProvider provider) async {
@@ -616,40 +569,6 @@ class _InfoPill extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickBullet extends StatelessWidget {
-  const _QuickBullet(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '• ',
-            style: TextStyle(
-              color: CSTheme.text,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: CSTheme.text,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ),
         ],

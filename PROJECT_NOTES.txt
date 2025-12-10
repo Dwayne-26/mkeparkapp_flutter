@@ -1,0 +1,44 @@
+Development notes for mkeparkapp_flutter
+---------------------------------------
+
+- Flutter version: uses Flutter 3.29.x locally; run `flutter --version` if needed.
+- Platforms: iOS, Android, Web; web uses `web/firebase-config.json` and Dart config in `lib/firebase_options.dart`.
+- Firebase: Config in `lib/firebase_options.dart` (web/android/ios). Web also has `web/firebase-config.json`. Register authorized domains for web in Firebase Auth.
+- Auth flows:
+  * Email/password: handled in `lib/screens/auth_screen.dart` via `UserProvider.register/login`.
+  * Phone, Google, Apple: see `UserProvider` methods and `_handlePhoneSignUp`, `_handleGoogle`, `_handleApple` in auth screen.
+  * Guest mode supported.
+- Profile:
+  * Profile page (`lib/screens/profile_screen.dart`) now geocodes addresses via `geocoding` and saves raw + formatted address + lat/lng in `UserProfile`.
+  * `UserProfile` JSON fields: `formattedAddress`, `addressLatitude`, `addressLongitude` added.
+- Linting:
+  * `flutter analyze` currently clean. Deprecated `withOpacity`, `describeEnum`, and `desiredAccuracy` already replaced.
+  * Welcome dialog and quick-start tutorial are disabled via flags in `lib/main.dart`. Promo banner on dashboard is commented out.
+- Web embeds:
+  * `openchargemap_embed_web.dart` and `publicstuff_embed_web.dart` use `package:web` instead of `dart:html`. Dependency `web` is added to pubspec.
+- Scripts:
+  * `scripts/test_firebase_auth.py` to hit Firebase Identity Toolkit REST (sign-up/sign-in). Reads web API key from env `FIREBASE_WEB_API_KEY` or falls back to `lib/firebase_options.dart` web key.
+- Pods / iOS:
+  * CocoaPods repo updated and pods installed with Firebase iOS SDK 12.4.0. Warning about base configuration is benign with custom xcconfigs.
+- Feature toggles:
+  * Welcome dialog: `CitySmartShell._welcomeDialogEnabled` (currently false).
+  * Quick start tutorial: `_quickStartEnabled` false; helper widgets removed.
+  * Promo banner disabled in `lib/screens/dashboard_screen.dart`.
+- Addressing:
+  * When updating profile address, failures in geocoding block the save with a snackbar.
+- Debugging:
+  * VS Code launch config in `.vscode/launch.json` includes Flutter web (Chrome).
+- Navigation chrome:
+  * Shared `CitySmartScaffold` (drawer + CitySmart title + bottom nav) in `lib/widgets/citysmart_scaffold.dart`.
+  * Applied to landing, dashboard, feed, profile, auth, vehicles, and charging map screens; bottom nav routes to `/dashboard`, `/citysmart-map`, `/citysmart-feed`.
+- Branding:
+  * User-facing brand text updated to “MKE CitySmart” across app bars, welcome, splash, and auth copy.
+  * iOS/macOS app icons updated from `assets/MKE_AppIcon.appiconset.zip` into:
+    - `ios/Runner/Assets.xcassets/AppIcon.appiconset/`
+    - `macos/Runner/Assets.xcassets/AppIcon.appiconset/` (currently uses the same set; replace with macOS-specific sizes if provided).
+  * Web manifest renamed to “MKE CitySmart” with updated icons (`web/icons/Icon-192.png`, `Icon-512.png`, maskable variants) and favicon regenerated from the 1024px master.
+
+Open items / reminders:
+- If re-enabling welcome or quick-start, restore content in `main.dart`.
+- If you rotate Firebase keys, update both `lib/firebase_options.dart` and `web/firebase-config.json`.
+- For web iframe embeds, ensure `web` dependency stays in sync and authorized domains are set.

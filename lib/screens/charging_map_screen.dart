@@ -11,7 +11,7 @@ import '../providers/user_provider.dart';
 import '../services/api_client.dart';
 import '../services/prediction_api_service.dart';
 import '../widgets/openchargemap_embed.dart';
-import '../widgets/main_drawer.dart';
+import '../widgets/citysmart_scaffold.dart';
 import '../services/location_service.dart';
 import '../services/open_charge_map_service.dart';
 import '../services/weather_service.dart';
@@ -74,23 +74,21 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
         .sightings
         .where((s) => s.latitude != null && s.longitude != null)
         .toList();
-    return Scaffold(
-      drawer: const MainDrawer(),
-      appBar: AppBar(
-        title: const Text('EV charging map'),
-        actions: [
-          IconButton(
-            onPressed: _loadPredictions,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh predictions',
-          ),
-          IconButton(
-            onPressed: () => _openDetails(context),
-            icon: const Icon(Icons.list_alt_outlined),
-            tooltip: 'View station list',
-          ),
-        ],
-      ),
+    return CitySmartScaffold(
+      title: 'EV charging map',
+      currentIndex: 1,
+      actions: [
+        IconButton(
+          onPressed: _loadPredictions,
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh predictions',
+        ),
+        IconButton(
+          onPressed: () => _openDetails(context),
+          icon: const Icon(Icons.list_alt_outlined),
+          tooltip: 'View station list',
+        ),
+      ],
       body: Column(
         children: [
           Padding(

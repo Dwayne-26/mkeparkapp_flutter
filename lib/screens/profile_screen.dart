@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,17 +44,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     final provider = context.read<UserProvider>();
+    final rawAddress = _addressController.text.trim();
+    String? formattedAddress;
+    double? lat;
+    double? lng;
+    if (rawAddress.isNotEmpty) {
+      try {
+        final locations = await locationFromAddress(rawAddress);
+        if (locations.isEmpty) {
+          throw Exception('No results for that address.');
+        }
+        lat = locations.first.latitude;
+        lng = locations.first.longitude;
+        final placemarks = await placemarkFromCoordinates(lat, lng);
+        formattedAddress = placemarks.isNotEmpty
+            ? _formatPlacemark(placemarks.first)
+            : rawAddress;
+      } catch (e) {
+        setState(() => _saving = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not verify address: ${e.toString()}')),
+        );
+        return;
+      }
+    }
     await provider.updateProfile(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
+      address: rawAddress.isEmpty ? null : rawAddress,
+      formattedAddress: formattedAddress ?? (rawAddress.isEmpty ? null : rawAddress),
+      addressLatitude: lat,
+      addressLongitude: lng,
     );
     setState(() => _saving = false);
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+  }
+
+  String _formatPlacemark(Placemark placemark) {
+    final parts = <String>[
+      if ((placemark.street ?? '').trim().isNotEmpty) placemark.street!.trim(),
+      if ((placemark.locality ?? '').trim().isNotEmpty)
+        placemark.locality!.trim(),
+      if ((placemark.administrativeArea ?? '').trim().isNotEmpty)
+        placemark.administrativeArea!.trim(),
+      if ((placemark.postalCode ?? '').trim().isNotEmpty)
+        placemark.postalCode!.trim(),
+      if ((placemark.country ?? '').trim().isNotEmpty)
+        placemark.country!.trim(),
+    ];
+    return parts.join(', ');
   }
 
   @override
@@ -85,25 +130,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Profile & Settings'),
-              actions: [
-                IconButton(
-                  onPressed: () async {
-                    await provider.logout();
-                    if (!context.mounted) return;
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/',
-                      (route) => false,
-                    );
-                },
-                icon: const Icon(Icons.logout),
-                tooltip: 'Sign out',
-              ),
-            ],
-          ),
+        return CitySmartScaffold(
+          title: 'Profile & Settings',
+          currentIndex: 0,
+          actions: [
+            IconButton(
+              onPressed: () async {
+                await provider.logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+              tooltip: 'Sign out',
+            ),
+          ],
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),

@@ -14,6 +14,9 @@ class UserProfile {
     required this.email,
     this.phone,
     this.address,
+    this.formattedAddress,
+    this.addressLatitude,
+    this.addressLongitude,
     this.vehicles = const [],
     this.preferences = const UserPreferences(
       parkingNotifications: true,
@@ -39,6 +42,9 @@ class UserProfile {
   final String email;
   final String? phone;
   final String? address;
+  final String? formattedAddress;
+  final double? addressLatitude;
+  final double? addressLongitude;
   final List<Vehicle> vehicles;
   final UserPreferences preferences;
   final AdPreferences adPreferences;
@@ -56,6 +62,9 @@ class UserProfile {
     String? email,
     String? phone,
     String? address,
+    String? formattedAddress,
+    double? addressLatitude,
+    double? addressLongitude,
     List<Vehicle>? vehicles,
     UserPreferences? preferences,
     List<Permit>? permits,
@@ -74,6 +83,9 @@ class UserProfile {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      formattedAddress: formattedAddress ?? this.formattedAddress,
+      addressLatitude: addressLatitude ?? this.addressLatitude,
+      addressLongitude: addressLongitude ?? this.addressLongitude,
       vehicles: vehicles ?? this.vehicles,
       preferences: preferences ?? this.preferences,
       adPreferences: adPreferences ?? this.adPreferences,
@@ -99,6 +111,9 @@ class UserProfile {
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
       address: json['address'] as String?,
+      formattedAddress: json['formattedAddress'] as String?,
+      addressLatitude: (json['addressLatitude'] as num?)?.toDouble(),
+      addressLongitude: (json['addressLongitude'] as num?)?.toDouble(),
       vehicles: vehiclesJson
           .map((vehicle) => Vehicle.fromJson(vehicle as Map<String, dynamic>))
           .toList(),
@@ -169,6 +184,9 @@ class UserProfile {
     'email': email,
     'phone': phone,
     'address': address,
+    'formattedAddress': formattedAddress,
+    'addressLatitude': addressLatitude,
+    'addressLongitude': addressLongitude,
     'vehicles': vehicles.map((vehicle) => vehicle.toJson()).toList(),
     'preferences': preferences.toJson(),
     'adPreferences': adPreferences.toJson(),

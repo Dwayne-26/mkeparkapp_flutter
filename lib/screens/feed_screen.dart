@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/main_drawer.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const MainDrawer(),
-      appBar: AppBar(
-        title: const Text('CitySmart'),
-      ),
-      body: const _FeedBody(),
+    return const CitySmartScaffold(
+      title: 'MKE CitySmart',
+      currentIndex: 2,
+      body: _FeedBody(),
     );
   }
 }

@@ -89,7 +89,7 @@ class WelcomeScreen extends StatelessWidget {
                                       ),
                                       SizedBox(width: 6),
                                       Text(
-                                        'CitySmart',
+                                        'MKE CitySmart',
                                         style: TextStyle(
                                           color: CSTheme.primary,
                                           fontWeight: FontWeight.w700,
@@ -107,7 +107,7 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             const Text(
-                              'Welcome to MKEPark',
+                              'Welcome to MKE CitySmart',
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w700,
@@ -143,7 +143,7 @@ class WelcomeScreen extends StatelessWidget {
                                     ? null
                                     : () {
                                         final route = isLoggedIn
-                                            ? '/landing'
+                                            ? '/dashboard'
                                             : '/auth';
                                         Navigator.pushReplacementNamed(
                                           context,
@@ -210,7 +210,7 @@ class WelcomeScreen extends StatelessWidget {
                                         if (!context.mounted) return;
                                         Navigator.pushReplacementNamed(
                                           context,
-                                          '/landing',
+                                          '/dashboard',
                                         );
                                       },
                                 icon: const Icon(Icons.visibility_outlined),
