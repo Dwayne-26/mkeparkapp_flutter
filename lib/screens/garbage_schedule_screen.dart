@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
@@ -173,8 +174,7 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
   void initState() {
     super.initState();
     _service = GarbageScheduleService(
-      baseUrl:
-          'https://milwaukeemaps.milwaukee.gov/arcgis/rest/services/DPW/DPW_Sanitation/MapServer/9',
+      baseUrl: 'https://itmdapps.milwaukee.gov/DPWServletsPublic/garbage_day',
     );
   }
 
@@ -192,10 +192,20 @@ class _GarbageScheduleScreenState extends State<GarbageScheduleScreen> {
         });
         return;
       }
-      final schedules = await _service.fetchByLocation(
-        latitude: loc.latitude,
-        longitude: loc.longitude,
+      final placemarks = await placemarkFromCoordinates(
+        loc.latitude,
+        loc.longitude,
       );
+      final street = placemarks.isNotEmpty ? placemarks.first.street : null;
+      if (street == null || street.isEmpty) {
+        setState(() {
+          _error = 'Could not resolve your address from location.';
+          _loading = false;
+        });
+        return;
+      }
+      _addressController.text = street;
+      final schedules = await _service.fetchByAddress(street);
       if (!mounted) return;
       await context.read<UserProvider>().setGarbageSchedules(schedules);
     } catch (e) {

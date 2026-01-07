@@ -132,7 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   HomeTile(
                     icon: Icons.workspace_premium,
                     title: 'Subscriptions',
-                    subtitle: 'Plans & waivers',
+                    subtitle: 'Plans & perks',
                     onTap: () =>
                         Navigator.pushNamed(context, '/subscriptions'),
                   ),
