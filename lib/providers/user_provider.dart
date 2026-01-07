@@ -97,7 +97,6 @@ class UserProvider extends ChangeNotifier {
   SubscriptionPlan get subscriptionPlan => _planForTier(tier);
   double get maxAlertRadiusMiles => subscriptionPlan.maxAlertRadiusMiles;
   int get maxAlertsPerDay => subscriptionPlan.alertVolumePerDay;
-  double get planFeeWaiverCap => subscriptionPlan.feeWaiverPct;
   bool get prioritySupport => subscriptionPlan.prioritySupport;
   List<MaintenanceReport> get maintenanceReports => _maintenanceReports;
   List<GarbageSchedule> get garbageSchedules => _garbageSchedules;
@@ -804,8 +803,7 @@ class UserProvider extends ChangeNotifier {
       waiverPct += 0.1;
       notes.add('Senior discount applied (-10%).');
     }
-    final planCap = planFeeWaiverCap;
-    waiverPct = waiverPct.clamp(0, planCap > 0 ? planCap : 0.6);
+    waiverPct = waiverPct.clamp(0, 0.6);
     final waiverAmount = beforeWaiver * waiverPct;
     final total = (beforeWaiver - waiverAmount)
         .clamp(0, double.infinity)
@@ -931,8 +929,7 @@ class UserProvider extends ChangeNotifier {
       waiverPct += 0.1;
       waiverNotes.add('Resident discount (-10%)');
     }
-    final planCap = planFeeWaiverCap;
-    waiverPct = waiverPct.clamp(0, planCap > 0 ? planCap : 0.6);
+    waiverPct = waiverPct.clamp(0, 0.6);
     final waiverAmount = base * waiverPct;
     final totalDue = (base - waiverAmount).clamp(0, double.infinity).toDouble();
 
@@ -1146,7 +1143,7 @@ class UserProvider extends ChangeNotifier {
           tier: SubscriptionTier.free,
           maxAlertRadiusMiles: 3,
           alertVolumePerDay: 3,
-          feeWaiverPct: 0,
+          zeroProcessingFee: false,
           prioritySupport: false,
           monthlyPrice: 0,
         );
@@ -1155,7 +1152,7 @@ class UserProvider extends ChangeNotifier {
           tier: SubscriptionTier.plus,
           maxAlertRadiusMiles: 8,
           alertVolumePerDay: 10,
-          feeWaiverPct: 0.15,
+          zeroProcessingFee: true,
           prioritySupport: false,
           monthlyPrice: 6.99,
         );
@@ -1164,7 +1161,7 @@ class UserProvider extends ChangeNotifier {
           tier: SubscriptionTier.pro,
           maxAlertRadiusMiles: 15,
           alertVolumePerDay: 25,
-          feeWaiverPct: 0.35,
+          zeroProcessingFee: true,
           prioritySupport: true,
           monthlyPrice: 14.99,
         );

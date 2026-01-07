@@ -1,16 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
+import '../services/ad_service.dart';
 import '../services/alternate_side_parking_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import 'alerts_landing_screen.dart';
 import '../widgets/citysmart_scaffold.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  BannerAd? _bannerAd;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  void _loadBanner() {
+    final ad = AdService.instance.createBanner(
+      unitId: 'ca-app-pub-2009498889741048/3072178018',
+      size: AdSize.banner,
+      onLoaded: (ad) => setState(() => _bannerAd = ad as BannerAd),
+      onFailed: (ad, _) => ad.dispose(),
+    );
+    if (ad == null) return;
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +118,7 @@ class DashboardScreen extends StatelessWidget {
                   HomeTile(
                     icon: Icons.workspace_premium,
                     title: 'Subscriptions',
+                    subtitle: 'Plans & perks',
                     onTap: () =>
                         Navigator.pushNamed(context, '/subscriptions'),
                   ),
@@ -118,6 +150,17 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            if (_bannerAd != null)
+              SizedBox(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              )
+            else
+              PromoBannerCard(
+                text: 'Start saving today with Auto Insurance?',
+                onTap: () => Navigator.pushNamed(context, '/subscriptions'),
+              ),
             // Promo banner intentionally disabled; keep in place for potential future use.
             // PromoBannerCard(
             //   text: 'Start saving today with Auto Insurance?',

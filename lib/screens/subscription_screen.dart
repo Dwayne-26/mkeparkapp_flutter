@@ -139,14 +139,16 @@ class _PlanCard extends StatelessWidget {
                     style: TextStyle(color: chipText),
                   ),
                 ),
-                Chip(
-                  backgroundColor: chipBg,
-                  avatar: const Icon(Icons.money_off, size: 16, color: kCitySmartYellow),
-                  label: Text(
-                    '${(plan.feeWaiverPct * 100).toStringAsFixed(0)}% fee waiver',
-                    style: TextStyle(color: chipText),
+                if (plan.zeroProcessingFee)
+                  Chip(
+                    backgroundColor: chipBg,
+                    avatar:
+                        const Icon(Icons.money_off, size: 16, color: kCitySmartYellow),
+                    label: Text(
+                      'Zero processing fees',
+                      style: TextStyle(color: chipText),
+                    ),
                   ),
-                ),
                 if (plan.prioritySupport)
                   Chip(
                     backgroundColor: chipBg,
@@ -183,7 +185,7 @@ const _plans = [
     tier: SubscriptionTier.free,
     maxAlertRadiusMiles: 3,
     alertVolumePerDay: 3,
-    feeWaiverPct: 0,
+    zeroProcessingFee: false,
     prioritySupport: false,
     monthlyPrice: 0,
   ),
@@ -191,7 +193,7 @@ const _plans = [
     tier: SubscriptionTier.plus,
     maxAlertRadiusMiles: 8,
     alertVolumePerDay: 10,
-    feeWaiverPct: 0.15,
+    zeroProcessingFee: true,
     prioritySupport: false,
     monthlyPrice: 3.99,
   ),
@@ -199,7 +201,7 @@ const _plans = [
     tier: SubscriptionTier.pro,
     maxAlertRadiusMiles: 15,
     alertVolumePerDay: 25,
-    feeWaiverPct: 0.35,
+    zeroProcessingFee: true,
     prioritySupport: true,
     monthlyPrice: 4.99,
   ),
