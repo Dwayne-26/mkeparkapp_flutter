@@ -11,6 +11,7 @@ import '../providers/user_provider.dart';
 import '../services/api_client.dart';
 import '../services/prediction_api_service.dart';
 import '../widgets/openchargemap_embed.dart';
+import '../widgets/citysmart_scaffold.dart';
 import '../services/location_service.dart';
 import '../services/open_charge_map_service.dart';
 import '../services/weather_service.dart';
@@ -73,22 +74,21 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
         .sightings
         .where((s) => s.latitude != null && s.longitude != null)
         .toList();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('EV charging map'),
-        actions: [
-          IconButton(
-            onPressed: _loadPredictions,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh predictions',
-          ),
-          IconButton(
-            onPressed: () => _openDetails(context),
-            icon: const Icon(Icons.list_alt_outlined),
-            tooltip: 'View station list',
-          ),
-        ],
-      ),
+    return CitySmartScaffold(
+      title: 'EV charging map',
+      currentIndex: 1,
+      actions: [
+        IconButton(
+          onPressed: _loadPredictions,
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh predictions',
+        ),
+        IconButton(
+          onPressed: () => _openDetails(context),
+          icon: const Icon(Icons.list_alt_outlined),
+          tooltip: 'View station list',
+        ),
+      ],
       body: Column(
         children: [
           Padding(
@@ -253,7 +253,7 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
                 TileLayer(
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.mkeparkapp.app',
+                  userAgentPackageName: 'com.mkecitysmart.app',
                 ),
                 if (predictions.isNotEmpty && _mode == _PredictionMode.heatmap)
                   CircleLayer(
@@ -263,7 +263,7 @@ class _ChargingMapScreenState extends State<ChargingMapScreen> {
                             point: LatLng(p.lat, p.lng),
                             radius: (50 + (p.score * 80)).clamp(40, 120),
                             useRadiusInMeter: false,
-                            color: _scoreColor(p.score).withOpacity(0.35),
+                            color: _scoreColor(p.score).withValues(alpha: 0.35),
                             borderColor: _scoreColor(p.score),
                             borderStrokeWidth: 1.5,
                           ),
@@ -572,7 +572,7 @@ class _HeatLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      backgroundColor: color.withOpacity(0.15),
+      backgroundColor: color.withValues(alpha: 0.15),
       label: Text(label, style: TextStyle(color: color)),
     );
   }

@@ -5,7 +5,7 @@ import '../citysmart/theme.dart';
 import '../providers/user_provider.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({Key? key}) : super(key: key);
+  const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +15,7 @@ class WelcomeScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF5E8A45),
-              Color(0xFF7CA726),
-            ],
+            colors: [Color(0xFF5E8A45), Color(0xFF7CA726)],
           ),
         ),
         child: Center(
@@ -85,11 +82,14 @@ class WelcomeScreen extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: const [
-                                      Icon(Icons.shield_outlined,
-                                          size: 18, color: CSTheme.primary),
+                                      Icon(
+                                        Icons.shield_outlined,
+                                        size: 18,
+                                        color: CSTheme.primary,
+                                      ),
                                       SizedBox(width: 6),
                                       Text(
-                                        'CitySmart',
+                                        'MKE CitySmart',
                                         style: TextStyle(
                                           color: CSTheme.primary,
                                           fontWeight: FontWeight.w700,
@@ -99,13 +99,15 @@ class WelcomeScreen extends StatelessWidget {
                                   ),
                                 ),
                                 if (isLoggedIn && profile != null)
-                                  const Icon(Icons.verified_user,
-                                      color: CSTheme.secondary),
+                                  const Icon(
+                                    Icons.verified_user,
+                                    color: CSTheme.secondary,
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 20),
                             const Text(
-                              'Welcome to MKEPark',
+                              'Welcome to MKE CitySmart',
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w700,
@@ -117,8 +119,7 @@ class WelcomeScreen extends StatelessWidget {
                             Text(
                               'Monitor parking rules, permits, vehicles, alerts, and city services with one calm, modern dashboard.',
                               style: TextStyle(
-                                color:
-                                    CSTheme.text.withOpacity(0.7),
+                                color: CSTheme.text.withValues(alpha: 0.7),
                                 fontSize: 16,
                                 height: 1.5,
                               ),
@@ -135,16 +136,19 @@ class WelcomeScreen extends StatelessWidget {
                             ],
                             const SizedBox(height: 24),
                             SizedBox(
-                            width: double.infinity,
+                              width: double.infinity,
                               child: FilledButton.icon(
                                 icon: const Icon(Icons.dashboard_customize),
                                 onPressed: isLoading
                                     ? null
                                     : () {
-                                        final route =
-                                            isLoggedIn ? '/landing' : '/auth';
+                                        final route = isLoggedIn
+                                            ? '/dashboard'
+                                            : '/auth';
                                         Navigator.pushReplacementNamed(
-                                            context, route);
+                                          context,
+                                          route,
+                                        );
                                       },
                                 label: Text(
                                   isLoggedIn
@@ -153,7 +157,9 @@ class WelcomeScreen extends StatelessWidget {
                                 ),
                                 style: FilledButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 18, horizontal: 20),
+                                    vertical: 18,
+                                    horizontal: 20,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -165,19 +171,23 @@ class WelcomeScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 12),
-                              if (!isLoggedIn) ...[
+                            if (!isLoggedIn) ...[
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   icon: const Icon(Icons.person_add_alt),
                                   onPressed: isLoading
                                       ? null
-                                      : () =>
-                                          Navigator.pushNamed(context, '/auth'),
+                                      : () => Navigator.pushNamed(
+                                          context,
+                                          '/auth',
+                                        ),
                                   label: const Text('Create an account'),
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 18, horizontal: 20),
+                                      vertical: 18,
+                                      horizontal: 20,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -195,11 +205,12 @@ class WelcomeScreen extends StatelessWidget {
                               TextButton.icon(
                                 onPressed: isLoading
                                     ? null
-                                    : () {
-                                        provider.continueAsGuest();
+                                    : () async {
+                                        await provider.continueAsGuest();
+                                        if (!context.mounted) return;
                                         Navigator.pushReplacementNamed(
                                           context,
-                                          '/landing',
+                                          '/dashboard',
                                         );
                                       },
                                 icon: const Icon(Icons.visibility_outlined),
@@ -210,7 +221,9 @@ class WelcomeScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 14, horizontal: 12),
+                                    vertical: 14,
+                                    horizontal: 12,
+                                  ),
                                   textStyle: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -219,9 +232,7 @@ class WelcomeScreen extends StatelessWidget {
                               const SizedBox(height: 6),
                               const Text(
                                 'Preview the dashboard without an account. You can sign in anytime.',
-                                style: TextStyle(
-                                  color: CSTheme.textMuted,
-                                ),
+                                style: TextStyle(color: CSTheme.textMuted),
                                 textAlign: TextAlign.left,
                               ),
                             ] else

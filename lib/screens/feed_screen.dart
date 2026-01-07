@@ -1,71 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import '../services/ad_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/citysmart_scaffold.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {},
-        ),
-        title: const Text('CitySmart'),
-      ),
-      body: const _FeedBody(),
+    return const CitySmartScaffold(
+      title: 'MKE CitySmart',
+      currentIndex: 2,
+      body: _FeedBody(),
     );
   }
 }
 
-class _FeedBody extends StatefulWidget {
+class _FeedBody extends StatelessWidget {
   const _FeedBody();
-
-  @override
-  State<_FeedBody> createState() => _FeedBodyState();
-}
-
-class _FeedBodyState extends State<_FeedBody> {
-  BannerAd? _bannerAd;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBanner();
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  void _loadBanner() {
-    const appId = 'ca-app-pub-2009498889741048~9019853313';
-    const unitId = 'ca-app-pub-2009498889741048/5020898555';
-    if (kIsWeb) return;
-    AdService.instance.initialize(appId: appId).then((_) {
-      final ad = AdService.instance.createBanner(
-        unitId: unitId,
-        size: AdSize.banner,
-        onLoaded: (ad) => setState(() => _bannerAd = ad as BannerAd),
-        onFailed: (ad, error) {
-          ad.dispose();
-        },
-      );
-      if (ad != null) {
-        _bannerAd = ad;
-        setState(() {});
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,13 +42,6 @@ class _FeedBodyState extends State<_FeedBody> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        if (!kIsWeb && _bannerAd != null)
-          SizedBox(
-            height: _bannerAd!.size.height.toDouble(),
-            width: _bannerAd!.size.width.toDouble(),
-            child: AdWidget(ad: _bannerAd!),
-          ),
       ],
     );
   }
@@ -182,7 +127,7 @@ class AlertFeedCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: kCitySmartYellow.withOpacity(0.16),
+                  color: kCitySmartYellow.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

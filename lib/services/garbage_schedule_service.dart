@@ -51,6 +51,22 @@ class GarbageScheduleService {
           pickupDate: recycling.date,
           type: PickupType.recycling,
         ),
+  GarbageScheduleService({
+    required this.baseUrl,
+    this.authToken,
+    http.Client? client,
+  }) : _client = client ?? http.Client();
+
+  final String baseUrl;
+  final String? authToken;
+  final http.Client _client;
+
+  Future<http.Response> _safeGet(Uri uri) async {
+    try {
+      return await _client.get(uri, headers: _headers());
+    } on http.ClientException catch (e) {
+      throw Exception(
+        'Network blocked fetching schedule (CORS/offline): ${e.message}',
       );
     }
 
