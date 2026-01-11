@@ -36,11 +36,12 @@ NOTES:
 - 2026-01-08: Created tracking. Need to verify configs.
 - 2026-01-11: Verified app Firebase config points to mkeparkapp-1ad15 (iOS + Android). Verified firebase CLI using prod alias.
 
-[F-002] [NEXT] (P0) Inventory Cloud Functions (prod) and confirm deploy is clean
+[F-002] [IN-PROGRESS] (P0) Inventory Cloud Functions (prod) and confirm deploy is clean
 - List existing functions and regions
 - Confirm runtime versions and required env vars
 - Confirm logs show no auth/permission errors
 NOTES:
+- 2026-01-11: Confirmed helloWorld deployed and reachable. Located cleanupExpiredSightings code in repo; still need full prod inventory list (names/regions/triggers).
 
 [F-003] [NEXT] (P0) Confirm app-to-backend connectivity
 - Identify exactly which endpoints/call sites the app uses
@@ -65,10 +66,11 @@ NOTES:
 - Pagination (basic)
 NOTES:
 
-[F-007] [NEXT] (P0) Expiration system for “live sightings”
+[F-007] [IN-PROGRESS] (P0) Expiration system for “live sightings”
 - Auto-expire after X minutes/hours
 - Remove from “live” feed without deleting history (optional)
 NOTES:
+- 2026-01-11: Cleanup scheduler function code located (marks expired). Need to confirm deploy + verify it runs against prod data.
 
 [F-008] [TODO] (P0) Moderation basics
 - Report button
@@ -135,10 +137,11 @@ NOTES:
 P0/P1 — QUALITY / SECURITY / RELEASE READINESS
 --------------------------------------------------------
 
-[F-401] [NEXT] (P0) Security rules audit
+[F-401] [DONE] (P0) Security rules audit
 - Only authenticated writes
 - Prevent editing others’ sightings
 NOTES:
+- 2026-01-11: Added firestore target to firebase.json, created firestore.rules, fixed compilation error, deployed Firestore rules successfully to prod.
 
 [F-402] [TODO] (P1) Performance (geo queries, feed pagination, caching)
 NOTES:
@@ -161,6 +164,9 @@ RUNNING NOTES (quick scratchpad)
 ========================================================
 DONE LOG (most recent first)
 ---------------------------------------------------------
+2026-01-11 — [F-401] Security rules audit
+  Result: Added firestore target to firebase.json, created firestore.rules, fixed compilation error, deployed Firestore rules to prod.
+  Evidence: firebase deploy --only firestore:rules (prod)
 2026-01-11 — [F-001] Verify Firebase project + environment configuration
   Result: Confirmed app Firebase config points to mkeparkapp-1ad15 (iOS + Android). Firebase CLI using prod alias.
   Evidence: Config review; firebase alias prod -> mkeparkapp-1ad15
