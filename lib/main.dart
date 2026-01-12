@@ -39,101 +39,50 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final diagnostics = BootstrapDiagnostics();
-  diagnostics
-    ..addMetadata('Platform', defaultTargetPlatform.name)
-    ..addMetadata(
-      'BuildMode',
-      kReleaseMode
-          ? 'release'
-          : kProfileMode
-              ? 'profile'
-              : 'debug',
-    );
-
-  const skipFirebaseBootstrap =
-      bool.fromEnvironment('SKIP_FIREBASE', defaultValue: false);
-  diagnostics.addMetadata('SKIP_FIREBASE', skipFirebaseBootstrap);
-  const enableRemoteNotifications =
-      bool.fromEnvironment('ENABLE_PUSH_NOTIFICATIONS', defaultValue: false);
-  diagnostics.addMetadata(
-    'ENABLE_PUSH_NOTIFICATIONS',
-    enableRemoteNotifications,
-  );
 
   bool firebaseReady = false;
-  if (skipFirebaseBootstrap) {
-    diagnostics.recordStatus(
-      'Firebase',
-      BootstrapStatus.skipped,
-      details: 'Skipped via SKIP_FIREBASE dart define.',
-    );
-  } else {
-    firebaseReady = await diagnostics.recordFuture<bool>(
-      'Firebase',
-      initializeFirebaseIfAvailable,
-      onSuccess: (ready, entry) {
-        if (ready) {
-          entry.details = 'Initialization completed.';
-        } else {
-          entry.setStatus(
-            BootstrapStatus.warning,
-            message:
-                'Config missing. Running without Firebase (no push/logging).',
-          );
-        }
-      },
-    );
+
+  try {
+    firebaseReady = await diagnostics
+        .recordFuture<bool>(
+          'Firebase',
+          initializeFirebaseIfAvailable,
+          onSuccess: (ready, entry) {
+            entry.details = ready ? 'Initialization completed.' : 'Config missing.';
+          },
+        )
+        .timeout(const Duration(seconds: 12), onTimeout: () => false);
+
+    await diagnostics
+        .recordFuture<void>(
+          'NotificationService',
+          () => NotificationService.instance.initialize(
+            enableRemoteNotifications: true,
+          ),
+        )
+        .timeout(const Duration(seconds: 8), onTimeout: () async {});
+  } catch (e, st) {
+    debugPrint('BOOT ERROR: $e');
+    debugPrint('$st');
+    firebaseReady = false;
   }
-  diagnostics.addMetadata('FirebaseReady', firebaseReady);
 
-  await diagnostics.recordFuture<void>(
-    'CloudLogService',
-    () => CloudLogService.instance.initialize(firebaseReady: firebaseReady),
-    onSuccess: (_, entry) {
-      if (firebaseReady) {
-        entry.details = 'Cloud logging enabled.';
-      } else {
-        entry.setStatus(
-          BootstrapStatus.info,
-          message: 'Skipped; Firebase unavailable.',
-        );
-      }
-    },
-  );
-
-  final shouldInitNotifications =
-      firebaseReady && enableRemoteNotifications;
-  diagnostics.addMetadata(
-    'InitPushNotifications',
-    shouldInitNotifications,
-  );
-
-  await diagnostics.recordFuture<void>(
-    'NotificationService',
-    () => NotificationService.instance
-        .initialize(enableRemoteNotifications: shouldInitNotifications),
-    onSuccess: (_, entry) {
-      if (shouldInitNotifications) {
-        entry.details = 'Remote + local notifications ready.';
-      } else {
-        entry.setStatus(
-          BootstrapStatus.info,
-          message:
-              'Remote notifications disabled/unsupported. Local notifications ready on mobile.',
-        );
-      }
-    },
-  );
-
-  final repository = await diagnostics.recordFuture<UserRepository>(
-    'UserRepository',
-    () async => UserRepository(),
-    onSuccess: (_, entry) => entry.details = 'Repository ready.',
-  );
+  UserRepository? repo;
+  try {
+    repo = await diagnostics
+        .recordFuture<UserRepository>(
+          'UserRepository',
+          () async => UserRepository(),
+          onSuccess: (_, entry) => entry.details = 'Repository ready.',
+        )
+        .timeout(const Duration(seconds: 8), onTimeout: () => UserRepository());
+  } catch (_) {
+    repo = UserRepository();
+  }
 
   runApp(
     MKEParkApp(
-      userRepository: repository,
+      userRepository: repo!,
       diagnostics: diagnostics,
       firebaseReady: firebaseReady,
     ),
