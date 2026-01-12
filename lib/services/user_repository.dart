@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../data/local/local_database.dart';
+import '../data/local/local_database.dart'
+    if (dart.library.html) '../data/local/local_database_stub.dart';
 import '../models/sighting_report.dart';
 import '../models/payment_receipt.dart';
 import '../models/ticket.dart';
