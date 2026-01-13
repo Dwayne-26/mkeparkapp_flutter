@@ -77,14 +77,16 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           )
           .timeout(const Duration(seconds: 12), onTimeout: () => false);
 
-      await diagnostics
-          .recordFuture<void>(
-            'NotificationService',
-            () => NotificationService.instance.initialize(
-              enableRemoteNotifications: true,
-            ),
-          )
-          .timeout(const Duration(seconds: 8), onTimeout: () async {});
+      if (!kIsWeb) {
+        await diagnostics
+            .recordFuture<void>(
+              'NotificationService',
+              () => NotificationService.instance.initialize(
+                enableRemoteNotifications: true,
+              ),
+            )
+            .timeout(const Duration(seconds: 8), onTimeout: () async {});
+      }
 
       await diagnostics
           .recordFuture<void>(
