@@ -74,7 +74,7 @@ export const cleanupExpiredSightings = onSchedule("every 5 minutes", async () =>
   await batch.commit();
 });
 
-export const mirrorSightingToAlerts = onDocumentWritten(
+export const mirrorSightingsToAlerts = onDocumentWritten(
   "sightings/{sightingId}",
   async (event) => {
     const db = admin.firestore();
@@ -121,6 +121,7 @@ export const mirrorSightingToAlerts = onDocumentWritten(
       longitude: data.longitude ?? null,
       createdAt,
       expiresAt,
+      status,
       active: status !== "expired",
       sourcePath: after.ref.path,
       mirroredAt: admin.firestore.FieldValue.serverTimestamp(),
