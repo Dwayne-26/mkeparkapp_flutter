@@ -1,289 +1,128 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../citysmart/theme.dart';
-import '../providers/user_provider.dart';
 import '../services/alternate_side_parking_service.dart';
 import '../widgets/alternate_side_parking_card.dart';
 
-class AlternateSideParkingScreen extends StatefulWidget {
+/// Full screen for alternate side parking information
+class AlternateSideParkingScreen extends StatelessWidget {
   const AlternateSideParkingScreen({super.key});
 
   @override
-  State<AlternateSideParkingScreen> createState() =>
-      _AlternateSideParkingScreenState();
-}
-
-class _AlternateSideParkingScreenState
-    extends State<AlternateSideParkingScreen> {
-  final _service = AlternateSideParkingService();
-  bool _morning = true;
-  bool _evening = true;
-  bool _midnight = true;
-
-  int _addressNumberFromProfile(UserProvider provider) {
-    final address = provider.profile?.address;
-    if (address == null) return 0;
-    final match = RegExp(r'(\\d+)').firstMatch(address);
-    if (match == null) return 0;
-    return int.tryParse(match.group(0) ?? '0') ?? 0;
+  Widget build(BuildContext context) {
+    final service = AlternateSideParkingService.instance;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Alternate Side Parking'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => _showInfoDialog(context),
+            tooltip: 'How it works',
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Main card with today and upcoming days
+          const AlternateSideParkingCard(
+            showUpcoming: true,
+            upcomingDays: 14,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // How it works section
+          _buildHowItWorksCard(context),
+          
+          const SizedBox(height: 16),
+          
+          // Tips section
+          _buildTipsCard(context),
+          
+          const SizedBox(height: 16),
+          
+          // Notification settings
+          _buildNotificationCard(context, service),
+        ],
+      ),
+    );
   }
 
-  Color _sideColor(ParkingSide side) =>
-      side == ParkingSide.odd ? Colors.orange : Colors.blueAccent;
-
-  String _sideLabel(ParkingSide side) =>
-      side == ParkingSide.odd ? 'Odd side' : 'Even side';
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<UserProvider>(
-      builder: (context, provider, _) {
-        final addressNumber = _addressNumberFromProfile(provider);
-        final status = _service.status(addressNumber: addressNumber);
-        final schedule = _service.schedule();
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Alternate-side parking'),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHowItWorksCard(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                AlternateSideParkingCard(
-                  addressNumber: addressNumber,
-                  service: _service,
-                ),
-                const SizedBox(height: 16),
-                _InfoCard(
-                  title: 'Today & tomorrow',
-                  child: Column(
-                    children: [
-                      _DayRow(
-                        label: 'Today',
-                        date: status.now,
-                        side: status.sideToday,
-                        isSoon: status.isSwitchSoon,
-                        subtitle:
-                            'Switch at ${TimeOfDay.fromDateTime(status.nextSwitch).format(context)}',
-                      ),
-                      const Divider(height: 24),
-                      _DayRow(
-                        label: 'Tomorrow',
-                        date: status.now.add(const Duration(days: 1)),
-                        side: status.sideTomorrow,
-                      ),
-                    ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.help_outline,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
-                const SizedBox(height: 16),
-                _InfoCard(
-                  title: 'Upcoming 14 days',
-                  child: Column(
-                    children: schedule
-                        .map(
-                          (day) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: _sideColor(day.side).withValues(alpha: 0.16),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    day.date.day.toString(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: _sideColor(day.side),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${_weekday(day.date)} • ${_sideLabel(day.side)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: CSTheme.text,
-                                        ),
-                                      ),
-                                      if (day.isToday)
-                                        const Text(
-                                          'Today',
-                                          style: TextStyle(
-                                            color: CSTheme.textMuted,
-                                          ),
-                                        )
-                                      else if (day.isTomorrow)
-                                        const Text(
-                                          'Tomorrow',
-                                          style: TextStyle(
-                                            color: CSTheme.textMuted,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _InfoCard(
-                  title: 'How it works',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      _Bullet(text: 'Odd calendar days → park on odd-numbered addresses.'),
-                      _Bullet(text: 'Even calendar days → park on even-numbered addresses.'),
-                      _Bullet(text: 'Side flips automatically at midnight.'),
-                      _Bullet(text: 'Warnings if a flip is within 2 hours.'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _InfoCard(
-                  title: 'Notification settings',
-                  child: Column(
-                    children: [
-                      SwitchListTile.adaptive(
-                        title: const Text('Morning reminder'),
-                        subtitle:
-                            const Text('Low priority, daily context on the correct side.'),
-                        value: _morning,
-                        onChanged: (value) => setState(() => _morning = value),
-                      ),
-                      SwitchListTile.adaptive(
-                        title: const Text('Evening warning'),
-                        subtitle:
-                            const Text('Medium priority, warns before the midnight flip.'),
-                        value: _evening,
-                        onChanged: (value) => setState(() => _evening = value),
-                      ),
-                      SwitchListTile.adaptive(
-                        title: const Text('Midnight alert'),
-                        subtitle: const Text(
-                            'High priority, alerts when the side changes at midnight.'),
-                        value: _midnight,
-                        onChanged: (value) => setState(() => _midnight = value),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Notification toggles shown for UX; connect to your push scheduling service to persist.',
-                        style: TextStyle(color: CSTheme.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _InfoCard(
-                  title: 'Tips',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      _Bullet(text: 'Move early if you see a “switch soon” warning.'),
-                      _Bullet(text: 'Double-check after midnight if you park late.'),
-                      _Bullet(text: 'If your address is unknown, we default to showing the rule.'),
-                    ],
+                const SizedBox(width: 12),
+                Text(
+                  'How It Works',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _weekday(DateTime date) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[date.weekday - 1];
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: CSTheme.text,
-              ),
+            const SizedBox(height: 16),
+            _buildInfoRow(
+              icon: Icons.calendar_today,
+              title: 'Odd Days (1, 3, 5, 7...)',
+              description: 'Park on the odd-numbered side of the street',
+              color: Colors.orange,
             ),
             const SizedBox(height: 12),
-            child,
+            _buildInfoRow(
+              icon: Icons.calendar_today,
+              title: 'Even Days (2, 4, 6, 8...)',
+              description: 'Park on the even-numbered side of the street',
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow(
+              icon: Icons.schedule,
+              title: 'Switch at Midnight',
+              description: 'Parking side changes every night at 12:00 AM',
+              color: Colors.purple,
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _DayRow extends StatelessWidget {
-  const _DayRow({
-    required this.label,
-    required this.date,
-    required this.side,
-    this.isSoon = false,
-    this.subtitle,
-  });
-
-  final String label;
-  final DateTime date;
-  final ParkingSide side;
-  final bool isSoon;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = side == ParkingSide.odd ? Colors.orange : Colors.blueAccent;
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(12),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.calendar_today, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                '$label • ${date.month}/${date.day}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
+          child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -291,47 +130,319 @@ class _DayRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                side == ParkingSide.odd ? 'Odd side' : 'Even side',
+                title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: CSTheme.text,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
-              if (subtitle != null)
-                Text(
-                  subtitle!,
-                  style: const TextStyle(color: CSTheme.textMuted),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
                 ),
+              ),
             ],
           ),
         ),
-        if (isSoon)
-          const Icon(Icons.warning_amber_rounded,
-              color: Colors.redAccent, size: 20),
       ],
     );
   }
-}
 
-class _Bullet extends StatelessWidget {
-  const _Bullet({required this.text});
+  Widget _buildTipsCard(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.lightbulb_outline,
+                    color: Colors.amber,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Parking Tips',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildTipItem('Look at house numbers to identify which side is odd/even'),
+            _buildTipItem('Set a reminder to move your car before midnight'),
+            _buildTipItem('Check for posted signs - some streets may have exceptions'),
+            _buildTipItem('Enable notifications in this app for daily reminders'),
+          ],
+        ),
+      ),
+    );
+  }
 
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildTipItem(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: CSTheme.text)),
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.grey[400],
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: CSTheme.textMuted),
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14,
+                height: 1.4,
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(BuildContext context, AlternateSideParkingService service) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Notifications',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Get reminders to help you remember which side to park on:',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildNotificationOption(
+              icon: Icons.wb_sunny,
+              title: 'Morning Reminder',
+              description: 'Daily at 7:00 AM',
+              enabled: true,
+            ),
+            const SizedBox(height: 12),
+            _buildNotificationOption(
+              icon: Icons.nightlight_round,
+              title: 'Evening Warning',
+              description: 'Daily at 9:00 PM (before side changes)',
+              enabled: true,
+            ),
+            const SizedBox(height: 12),
+            _buildNotificationOption(
+              icon: Icons.alarm,
+              title: 'Midnight Alert',
+              description: 'At 12:00 AM when side changes',
+              enabled: false,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/preferences');
+                },
+                icon: const Icon(Icons.settings),
+                label: const Text('Configure Notifications'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationOption({
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool enabled,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: enabled ? Colors.green[50] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: enabled ? Colors.green[200]! : Colors.grey[300]!,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: enabled ? Colors.green[700] : Colors.grey[500],
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: enabled ? Colors.green[900] : Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: enabled ? Colors.green[700] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            enabled ? Icons.check_circle : Icons.cancel,
+            color: enabled ? Colors.green : Colors.grey,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('About Alternate Side Parking'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Alternate side parking is a traffic law that helps cities with:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 12),
+              _buildDialogBullet('Street cleaning operations'),
+              _buildDialogBullet('Snow plowing during winter'),
+              _buildDialogBullet('Emergency vehicle access'),
+              _buildDialogBullet('Fair parking distribution'),
+              const SizedBox(height: 16),
+              Text(
+                'The rule is simple: on odd-numbered days, park on the odd side. '
+                'On even-numbered days, park on the even side.',
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Violation may result in tickets or towing.',
+                        style: TextStyle(
+                          color: Colors.orange[900],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogBullet(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              color: Colors.grey,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(text, style: TextStyle(color: Colors.grey[700])),
           ),
         ],
       ),

@@ -1,249 +1,248 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../citysmart/theme.dart';
 import '../providers/user_provider.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF5E8A45), Color(0xFF7CA726)],
+            colors: [
+              const Color(0xFF5E8A45),
+              const Color(0xFF7CA726),
+            ],
           ),
         ),
-        child: Center(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Consumer<UserProvider>(
                 builder: (context, provider, _) {
                   final isLoading = provider.isInitializing;
                   final isLoggedIn = provider.isLoggedIn;
                   final profile = provider.profile;
                   return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Logo container with soft shadow
                       Container(
-                        width: 110,
-                        height: 110,
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: const [
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 16,
-                              offset: Offset(0, 10),
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
                           ],
                         ),
                         child: const Icon(
-                          Icons.local_parking,
-                          size: 64,
-                          color: CSTheme.primary,
+                          Icons.local_parking_rounded,
+                          size: 80,
+                          color: Color(0xFF5E8A45),
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 24,
-                              offset: Offset(0, 18),
-                            ),
-                          ],
+                      const SizedBox(height: 48),
+                      const Text(
+                        'Welcome to',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 2,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F5E9),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Icon(
-                                        Icons.shield_outlined,
-                                        size: 18,
-                                        color: CSTheme.primary,
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'MKE CitySmart',
-                                        style: TextStyle(
-                                          color: CSTheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (isLoggedIn && profile != null)
-                                  const Icon(
-                                    Icons.verified_user,
-                                    color: CSTheme.secondary,
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Welcome to MKE CitySmart',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: CSTheme.text,
-                                letterSpacing: 0.2,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'MKEPark',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -1,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Text(
+                          'Smart parking made simple',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (isLoggedIn && profile != null) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 16,
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Monitor parking rules, permits, vehicles, alerts, and city services with one calm, modern dashboard.',
-                              style: TextStyle(
-                                color: CSTheme.text.withValues(alpha: 0.7),
-                                fontSize: 16,
-                                height: 1.5,
-                              ),
-                            ),
-                            if (isLoggedIn && profile != null) ...[
-                              const SizedBox(height: 12),
+                              const SizedBox(width: 8),
                               Text(
                                 'Signed in as ${profile.name}',
                                 style: const TextStyle(
-                                  color: CSTheme.textMuted,
-                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                icon: const Icon(Icons.dashboard_customize),
-                                onPressed: isLoading
-                                    ? null
-                                    : () {
-                                        final route = isLoggedIn
-                                            ? '/dashboard'
-                                            : '/auth';
-                                        Navigator.pushReplacementNamed(
-                                          context,
-                                          route,
-                                        );
-                                      },
-                                label: Text(
-                                  isLoggedIn
-                                      ? 'Go to dashboard'
-                                      : 'Get Started',
-                                ),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 18,
-                                    horizontal: 20,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 48),
+                      
+                      // Main CTA Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  final route = isLoggedIn ? '/landing' : '/auth';
+                                  Navigator.pushReplacementNamed(context, route);
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF5E8A45),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 18,
                             ),
-                            const SizedBox(height: 12),
-                            if (!isLoggedIn) ...[
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.person_add_alt),
-                                  onPressed: isLoading
-                                      ? null
-                                      : () => Navigator.pushNamed(
-                                          context,
-                                          '/auth',
-                                        ),
-                                  label: const Text('Create an account'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 18,
-                                      horizontal: 20,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    side: const BorderSide(
-                                      color: CSTheme.border,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                isLoggedIn ? 'Go to Dashboard' : 'Get Started',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              TextButton.icon(
-                                onPressed: isLoading
-                                    ? null
-                                    : () async {
-                                        await provider.continueAsGuest();
-                                        if (!context.mounted) return;
-                                        Navigator.pushReplacementNamed(
-                                          context,
-                                          '/dashboard',
-                                        );
-                                      },
-                                icon: const Icon(Icons.visibility_outlined),
-                                label: const Text('Continue as guest'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: CSTheme.text,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 12,
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Preview the dashboard without an account. You can sign in anytime.',
-                                style: TextStyle(color: CSTheme.textMuted),
-                                textAlign: TextAlign.left,
-                              ),
-                            ] else
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pushNamed(context, '/profile'),
-                                child: const Text('Manage profile'),
-                              ),
-                          ],
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, size: 20),
+                            ],
+                          ),
                         ),
                       ),
+                      
+                      if (!isLoggedIn) ...[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: isLoading
+                                ? null
+                                : () => Navigator.pushNamed(context, '/auth'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: BorderSide(
+                                color: Colors.white.withOpacity(0.6),
+                                width: 2,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Create Account',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextButton.icon(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  provider.continueAsGuest();
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/landing',
+                                  );
+                                },
+                          icon: Icon(
+                            Icons.visibility_outlined,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          label: Text(
+                            'Continue as Guest',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            'Try the dashboard without creating an account',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ] else
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/profile'),
+                          child: Text(
+                            'Manage Profile',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },
