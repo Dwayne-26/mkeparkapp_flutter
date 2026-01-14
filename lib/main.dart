@@ -39,55 +39,103 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final diagnostics = BootstrapDiagnostics();
+  // Start UI immediately; bootstrap runs asynchronously to avoid splash hangs.
+  runApp(const _BootstrapApp());
+}
 
-  bool firebaseReady = false;
+class _BootstrapApp extends StatefulWidget {
+  const _BootstrapApp();
 
-  try {
-    firebaseReady = await diagnostics
-        .recordFuture<bool>(
-          'Firebase',
-          initializeFirebaseIfAvailable,
-          onSuccess: (ready, entry) {
-            entry.details = ready ? 'Initialization completed.' : 'Config missing.';
-          },
-        )
-        .timeout(const Duration(seconds: 12), onTimeout: () => false);
+  @override
+  State<_BootstrapApp> createState() => _BootstrapAppState();
+}
 
-    await diagnostics
-        .recordFuture<void>(
-          'NotificationService',
-          () => NotificationService.instance.initialize(
-            enableRemoteNotifications: true,
-          ),
-        )
-        .timeout(const Duration(seconds: 8), onTimeout: () async {});
-  } catch (e, st) {
-    debugPrint('BOOT ERROR: $e');
-    debugPrint('$st');
-    firebaseReady = false;
+class _BootstrapAppState extends State<_BootstrapApp> {
+  BootstrapDiagnostics? _diagnostics;
+  UserRepository? _repository;
+  bool _firebaseReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_bootstrap);
   }
 
-  UserRepository? repo;
-  try {
-    repo = await diagnostics
-        .recordFuture<UserRepository>(
-          'UserRepository',
-          () async => UserRepository(),
-          onSuccess: (_, entry) => entry.details = 'Repository ready.',
-        )
-        .timeout(const Duration(seconds: 8), onTimeout: () => UserRepository());
-  } catch (_) {
-    repo = UserRepository();
+  Future<void> _bootstrap() async {
+    final diagnostics = BootstrapDiagnostics();
+    bool firebaseReady = false;
+    UserRepository? repo;
+
+    try {
+      firebaseReady = await diagnostics
+          .recordFuture<bool>(
+            'Firebase',
+            initializeFirebaseIfAvailable,
+            onSuccess: (ready, entry) {
+              entry.details = ready ? 'Initialization completed.' : 'Config missing.';
+            },
+          )
+          .timeout(const Duration(seconds: 12), onTimeout: () => false);
+
+      if (!kIsWeb) {
+        await diagnostics
+            .recordFuture<void>(
+              'NotificationService',
+              () => NotificationService.instance.initialize(
+                enableRemoteNotifications: true,
+              ),
+            )
+            .timeout(const Duration(seconds: 8), onTimeout: () async {});
+      }
+
+      await diagnostics
+          .recordFuture<void>(
+            'CloudLogService',
+            () => CloudLogService.instance.initialize(firebaseReady: firebaseReady),
+          )
+          .timeout(const Duration(seconds: 8), onTimeout: () async {});
+    } catch (e, st) {
+      debugPrint('BOOT ERROR: $e');
+      debugPrint('$st');
+      firebaseReady = false;
+    }
+
+    try {
+      repo = await diagnostics
+          .recordFuture<UserRepository>(
+            'UserRepository',
+            () async => UserRepository(),
+            onSuccess: (_, entry) => entry.details = 'Repository ready.',
+          )
+          .timeout(const Duration(seconds: 8), onTimeout: () => UserRepository());
+    } catch (_) {
+      repo = UserRepository();
+    }
+
+    setState(() {
+      _diagnostics = diagnostics;
+      _repository = repo;
+      _firebaseReady = firebaseReady;
+    });
   }
 
-  runApp(
-    MKEParkApp(
-      userRepository: repo!,
-      diagnostics: diagnostics,
-      firebaseReady: firebaseReady,
-    ),
-  );
+  @override
+  Widget build(BuildContext context) {
+    if (_repository == null || _diagnostics == null) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    return MKEParkApp(
+      userRepository: _repository!,
+      diagnostics: _diagnostics!,
+      firebaseReady: _firebaseReady,
+    );
+  }
 }
 
 class MKEParkApp extends StatelessWidget {
