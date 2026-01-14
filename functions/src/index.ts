@@ -1,6 +1,10 @@
-import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
+import {
+  onDocumentCreated,
+  onDocumentUpdated,
+  onDocumentWritten,
+} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onRequest} from "firebase-functions/v2/https";
+import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -127,5 +131,100 @@ export const mirrorSightingsToAlerts = onDocumentWritten(
     };
 
     await db.collection("alerts").doc(sightingId).set(alertDoc, {merge: true});
+  },
+);
+
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+
+export const submitSighting = onCall(async (request) => {
+  const uidBase =
+    request.auth?.uid ?? `anonymous_${request.rawRequest.ip ?? "unknown"}`;
+  const uidKey = uidBase.replace(/[^A-Za-z0-9_.-]/g, "_");
+
+  const db = admin.firestore();
+  const now = admin.firestore.Timestamp.now();
+  const rateRef = db.collection("rate_limits").doc(uidKey);
+
+  const allowed = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(rateRef);
+    const data = snap.data() as {count?: number; windowStart?: admin.firestore.Timestamp} | undefined;
+    const windowStart = data?.windowStart ?? now;
+    const elapsed =
+      now.toMillis() - windowStart.toMillis();
+
+    if (!snap.exists || elapsed >= RATE_LIMIT_WINDOW_SECONDS * 1000) {
+      tx.set(rateRef, {count: 1, windowStart: now});
+      return true;
+    }
+
+    const count = data?.count ?? 0;
+    if (count >= RATE_LIMIT_MAX) return false;
+
+    tx.update(rateRef, {count: count + 1});
+    return true;
+  });
+
+  if (!allowed) {
+    throw new HttpsError(
+      "resource-exhausted",
+      "Rate limit exceeded. Try again later.",
+    );
+  }
+
+  const location = (request.data?.location ?? "").toString().trim();
+  const notes = (request.data?.notes ?? "").toString();
+  const isEnforcer = Boolean(request.data?.isEnforcer);
+  const latitude = Number(request.data?.latitude);
+  const longitude = Number(request.data?.longitude);
+  const hasGeo = Number.isFinite(latitude) && Number.isFinite(longitude);
+
+  if (!location || notes.length > 500) {
+    throw new HttpsError("invalid-argument", "Invalid report");
+  }
+
+  const alertRef = db.collection("alerts").doc();
+  await alertRef.set({
+    title: isEnforcer ? "Enforcement Sighting" : "Tow Sighting",
+    message: notes || "No notes",
+    location,
+    type: isEnforcer ? "enforcer" : "tow",
+    status: "pending",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    source: isEnforcer ? "parking_enforcer" : "tow_truck",
+    reporterUid: uidBase,
+    isPublic: false,
+    geo: hasGeo ? new admin.firestore.GeoPoint(latitude, longitude) : null,
+  });
+
+  logger.info("submitSighting created alert", {alertId: alertRef.id, uid: uidBase});
+
+  return {success: true, message: "Report submitted for review!"};
+});
+
+export const notifyOnApproval = onDocumentUpdated(
+  "alerts/{alertId}",
+  async (event) => {
+    const before = event.data?.before.data() as any | undefined;
+    const after = event.data?.after.data() as any | undefined;
+
+    if (!before || !after) return;
+
+    if (!before.isPublic && after.isPublic) {
+      const title = (after.title ?? "Alert").toString();
+      const message = (after.message ?? "").toString();
+      const location = (after.location ?? "").toString();
+      const body = [message, location ? `at ${location}` : ""]
+        .filter((part) => part && part.trim().length > 0)
+        .join(" ");
+
+      await admin.messaging().sendToTopic("alerts", {
+        notification: {
+          title,
+          body: body || "New alert approved.",
+        },
+      });
+    }
   },
 );
