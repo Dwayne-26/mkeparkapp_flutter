@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
 import '../services/risk_alert_service.dart';
+import '../widgets/alternate_side_parking_card.dart';
 
 class LandingScreen extends StatelessWidget {
   @override
@@ -173,6 +174,11 @@ class LandingScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              
+              // Alternate Side Parking Card
+              const AlternateSideParkingTile(),
+              
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
