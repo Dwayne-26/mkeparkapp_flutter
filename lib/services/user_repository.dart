@@ -136,11 +136,32 @@ class UserRepository {
         ...report.toJson(),
         'reporterId': _activeUserId,
         'timestamp': FieldValue.serverTimestamp(),
+        // Per-sighting counter baseline for global queries
+        'reportCount': 0,
       };
       batch.set(collectionRef.doc(), data);
     }
 
     await batch.commit();
+
+    // Ensure the parent user document has a reports counter field and
+    // increment the reportCount. This helps quickly show counts without
+    // querying the subcollection.
+    try {
+      // Ensure a baseline field exists (no-op if already present).
+      await _userDocument().set({'reports': 0}, SetOptions(merge: true));
+
+      // Try to increment the reportCount by the number of reports added.
+      await _userDocument().update({'reportCount': FieldValue.increment(reports.length)});
+    } catch (e) {
+      // If update fails (for example the document didn't exist concurrently),
+      // try to set the count explicitly as a fallback.
+      try {
+        await _userDocument().set({'reportCount': reports.length}, SetOptions(merge: true));
+      } catch (_) {
+        // Swallow — this counter is a convenience and should not prevent app flow.
+      }
+    }
   }
 
   Future<List<Ticket>> loadTickets() => _loadSubCollection(
@@ -193,6 +214,42 @@ class UserRepository {
       } catch (_) {
         // Leave mutation for the next sync attempt.
       }
+    }
+  }
+
+  /// Report a sighting (global collection). This will:
+  /// - add a reporter record under /sightings/{id}/reporters/{uid} to prevent
+  ///   duplicate reports from the same user, and
+  /// - increment `reportCount` on the sighting doc (creating baseline if needed).
+  Future<void> reportSightingGlobal(String sightingId) async {
+    final userId = _activeUserId;
+    if (userId == null) return;
+
+    final sightingRef = _firestore.collection('sightings').doc(sightingId);
+    final reporterRef = sightingRef.collection('reporters').doc(userId);
+
+    try {
+      await _firestore.runTransaction((tx) async {
+        final reporterSnap = await tx.get(reporterRef);
+        if (reporterSnap.exists) return; // already reported by this user
+
+        // create reporter record
+        tx.set(reporterRef, {'reportedAt': FieldValue.serverTimestamp()});
+
+        final sightingSnap = await tx.get(sightingRef);
+        if (!sightingSnap.exists) {
+          tx.set(sightingRef, {
+            'reportCount': 1,
+            'reports': 0, // baseline for compatibility
+            'timestamp': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } else {
+          tx.update(sightingRef, {'reportCount': FieldValue.increment(1)});
+        }
+      });
+    } catch (e) {
+      // Swallow errors — reporting should not block UX. Higher-level code
+      // may surface a message if desired.
     }
   }
 }
