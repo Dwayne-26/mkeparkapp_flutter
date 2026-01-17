@@ -87,6 +87,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           )
           .timeout(const Duration(seconds: 12), onTimeout: () => false);
 
+      // If Firebase initialized, attempt an anonymous sign-in so
+      // FirebaseAuth is ready for services that expect a user.
+      if (firebaseReady) {
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+          debugPrint('Signed in anonymously: ${FirebaseAuth.instance.currentUser?.uid}');
+        } catch (e, st) {
+          debugPrint('Anonymous sign-in failed: $e');
+          // Log to cloud if available; ignore failures here.
+          try {
+            log('Anonymous sign-in failed: $e', stackTrace: st);
+          } catch (_) {}
+        }
+      }
+
       if (firebaseReady) {
         await diagnostics
             .recordFuture<void>(
