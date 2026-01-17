@@ -27,6 +27,7 @@ import 'screens/history_receipts_screen.dart';
 import 'screens/maintenance_report_screen.dart';
 import 'screens/garbage_schedule_screen.dart';
 import 'screens/city_settings_screen.dart';
+import 'screens/local_alerts_screen.dart';
 import 'services/notification_service.dart';
 import 'services/user_repository.dart';
 import 'screens/alternate_side_parking_screen.dart';
@@ -85,6 +86,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
             },
           )
           .timeout(const Duration(seconds: 12), onTimeout: () => false);
+
+      // If Firebase initialized, attempt an anonymous sign-in so
+      // FirebaseAuth is ready for services that expect a user.
+      if (firebaseReady) {
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+          debugPrint('Signed in anonymously: ${FirebaseAuth.instance.currentUser?.uid}');
+        } catch (e, st) {
+          debugPrint('Anonymous sign-in failed: $e');
+          // Log to cloud if available; ignore failures here.
+          try {
+            log('Anonymous sign-in failed: $e', stackTrace: st);
+          } catch (_) {}
+        }
+      }
 
       if (firebaseReady) {
         await diagnostics
@@ -201,6 +217,7 @@ class MKEParkApp extends StatelessWidget {
           '/vehicles': (context) => const VehicleManagementScreen(),
           '/preferences': (context) => const PreferencesScreen(),
           '/alerts': (context) => const AlertsLandingScreen(),
+          '/local': (context) => const LocalAlertsScreen(),
           '/charging': (context) => const ChargingMapScreen(),
           '/report-sighting': (context) => const ReportSightingScreen(),
           '/tickets': (context) => const TicketWorkflowScreen(),
@@ -209,8 +226,8 @@ class MKEParkApp extends StatelessWidget {
           '/predictions': (context) => const ChargingMapScreen(),
           '/garbage': (context) => const GarbageScheduleScreen(),
           '/city-settings': (context) => const CitySettingsScreen(),
-          '/alternate-parking': (context) =>
-              const AlternateSideParkingScreen(),
+          '/alternate-side-parking': (context) => const AlternateSideParkingScreen(),
+          '/alternate-parking': (context) => const AlternateSideParkingScreen(),
           '/parking-heatmap': (context) => const ParkingHeatmapScreen(),
           '/citysmart-dashboard': (context) => const DashboardScreen(),
           '/citysmart-map': (context) => const MapScreen(),
@@ -225,7 +242,13 @@ class MKEParkApp extends StatelessWidget {
             }
             return AlertDetailScreen(alertId: alertId);
           },
+          '/local': (context) => const LocalAlertsScreen(),
         },
+        onUnknownRoute: (settings) => MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(child: Text('Route not found: ${settings.name}')),
+          ),
+        ),
       ),
     );
   }
