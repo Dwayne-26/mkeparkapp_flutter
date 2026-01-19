@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_functions/firebase_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'citysmart/branding_preview.dart';
 import 'firebase_bootstrap.dart';
@@ -104,6 +106,14 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       }
 
       if (firebaseReady) {
+        if (kDebugMode) {
+          FirebaseFunctions.instance
+              .useFunctionsEmulator('localhost', 5003);
+          FirebaseFirestore.instance
+              .useFirestoreEmulator('localhost', 8085);
+          FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+        }
+
         await diagnostics
             .recordFuture<void>(
               'Auth',
@@ -201,10 +211,17 @@ class MKEParkApp extends StatelessWidget {
         title: 'MKE CitySmart',
         theme: buildCitySmartTheme(),
         initialRoute: '/dashboard',
+        onUnknownRoute: (settings) => MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: Text('Route not found: ${settings.name}'),
+            ),
+          ),
+        ),
         routes: {
           '/': (context) => const DashboardScreen(),
           '/dashboard': (context) => const DashboardScreen(),
-          '/landing': (context) => const LandingScreen(),
+          '/landing': (context) => LandingScreen(),
           '/auth': (context) => const AuthScreen(),
           '/register': (context) => const RegisterScreen(),
           '/parking': (context) => const ParkingScreen(),
