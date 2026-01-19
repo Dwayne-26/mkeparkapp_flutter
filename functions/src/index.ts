@@ -362,6 +362,21 @@ export const sendNearbyAlerts = onCall(async (request) => {
   }
 
   const radiusMiles = Number(request.data?.radiusMiles ?? 3);
+  // production: require auth and coordinates
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+
+  const latitude = Number(request.data?.latitude);
+  const longitude = Number(request.data?.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new HttpsError('invalid-argument', 'Latitude/longitude required.');
+  }
+
+  const token = (request.data?.token ?? '').toString().trim();
+  if (!token) {
+    throw new HttpsError('invalid-argument', 'FCM token required.');
+  }
   const windowMinutes = Number(request.data?.windowMinutes ?? 180);
   const limit = Math.min(Number(request.data?.limit ?? 25), 50);
 
