@@ -7,6 +7,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import * as crypto from 'crypto';
 
 admin.initializeApp();
 
@@ -277,10 +278,10 @@ export const sendNearbyAlerts = onCall(async (request) => {
     const rawHeaders = (request.rawRequest && (request.rawRequest as any).headers) || {};
     const appCheckToken = rawHeaders['x-firebase-appcheck'] || rawHeaders['x-firebase-app-check'];
     let appCheckVerified = false;
+    const inEmulator = (process.env.FUNCTIONS_EMULATOR === 'true') || (process.env.FIREBASE_EMULATOR_HUB === 'true');
 
     if (!request.auth) {
       // If not running in emulator, require App Check
-      const inEmulator = (process.env.FUNCTIONS_EMULATOR === 'true') || (process.env.FIREBASE_EMULATOR_HUB === 'true');
       if (!inEmulator) {
         if (!appCheckToken) {
           throw new HttpsError('permission-denied', 'Unauthenticated test push requires a valid App Check token.');
@@ -305,10 +306,10 @@ export const sendNearbyAlerts = onCall(async (request) => {
       }
     }
 
-    // Rate-limit test sends per UID (if auth) otherwise per IP
-    const now = admin.firestore.Timestamp.now();
-    const windowSeconds = 60 * 60; // 1 hour
-    const MAX_TEST_PER_WINDOW = 5;
+  // Rate-limit test sends per UID (if auth) otherwise per IP
+  const nowMillis = Date.now();
+  const windowSeconds = 60 * 60; // 1 hour
+  const MAX_TEST_PER_WINDOW = 5;
 
     const requesterId = request.auth?.uid ? `uid_${request.auth.uid}` : `ip_${((request.rawRequest && (request.rawRequest as any).ip) || 'unknown').toString().replace(/[^A-Za-z0-9_.-]/g, '_')}`;
     const rateRef = db.collection('test_push_rate_limits').doc(requesterId);
@@ -316,11 +317,13 @@ export const sendNearbyAlerts = onCall(async (request) => {
     const allowed = await db.runTransaction(async (tx) => {
       const snap = await tx.get(rateRef);
       const data = snap.exists ? (snap.data() as any) : undefined;
-      const windowStart = data?.windowStart ? data.windowStart.toMillis() : now.toMillis();
-      const elapsed = now.toMillis() - windowStart;
+      const windowStartMillis = data?.windowStart
+        ? (typeof data.windowStart === 'number' ? data.windowStart : data.windowStart.toMillis())
+        : nowMillis;
+      const elapsed = nowMillis - windowStartMillis;
 
       if (!snap.exists || elapsed >= windowSeconds * 1000) {
-        tx.set(rateRef, {count: tokens.length, windowStart: now});
+        tx.set(rateRef, {count: tokens.length, windowStart: nowMillis});
         return true;
       }
 
@@ -334,19 +337,30 @@ export const sendNearbyAlerts = onCall(async (request) => {
       throw new HttpsError('resource-exhausted', 'Test push rate limit exceeded. Try again later.');
     }
 
-    // Send pushes (continue on partial failures)
-    const sendPromises = tokens.map((tok) =>
-      admin.messaging().send({
-        token: tok,
-        notification: {
-          title: 'Test alert',
-          body: reason,
-        },
-        data: {testMode: 'true'},
-      }).then(() => ({tok, ok: true})).catch((e) => ({tok, ok: false, error: e}))
-    );
+    // Decide whether to actually call FCM or simulate (emulator / opt-out)
+    const skipSends = inEmulator || (process.env.SKIP_FCM_SENDS === 'true');
+    const simulateSuccess = process.env.SIMULATE_FCM_SUCCESS === 'true';
 
-    const results = await Promise.all(sendPromises);
+    let results: Array<{tok: string; ok: boolean; error?: any}> = [];
+    if (skipSends) {
+      // Do not call admin.messaging().send() in the emulator or when explicitly skipped.
+      results = tokens.map((tok) => ({tok, ok: !!simulateSuccess, error: simulateSuccess ? undefined : 'skipped-emulator'}));
+    } else {
+      // Send pushes (continue on partial failures)
+      const sendPromises = tokens.map((tok) =>
+        admin.messaging().send({
+          token: tok,
+          notification: {
+            title: 'Test alert',
+            body: reason,
+          },
+          data: {testMode: 'true'},
+        }).then(() => ({tok, ok: true})).catch((e) => ({tok, ok: false, error: e}))
+      );
+
+      results = await Promise.all(sendPromises);
+    }
+
     const sent = results.filter((r) => r.ok).length;
 
     logger.info('sendNearbyAlerts testMode', {
@@ -356,7 +370,30 @@ export const sendNearbyAlerts = onCall(async (request) => {
       sent,
       appCheckVerified,
       reason,
+      skippedSends: skipSends,
     });
+
+    // Audit: store only token hashes and metadata (do NOT store raw tokens)
+    try {
+      const tokenHashes = tokens.map((t) => crypto.createHash('sha256').update(t).digest('hex'));
+      const sendSummary = results.map((r, i) => ({tokHash: tokenHashes[i], ok: r.ok, error: r.ok ? undefined : String(r.error ?? 'error')}));
+
+      await db.collection('test_push_audit').add({
+        tokenHashes,
+        requester: request.auth?.uid ?? null,
+        requesterIp: (request.rawRequest && (request.rawRequest as any).ip) || null,
+        reason,
+        appCheckVerified,
+        sent,
+        total: tokens.length,
+        skippedSends: skipSends,
+        sendSummary,
+        createdAtMillis: nowMillis,
+      });
+    } catch (err) {
+      // Audit failures should not block the caller; log the error message/stack
+      logger.warn('Failed to write test_push_audit', {err: String((err as any) ?? '')});
+    }
 
     return {success: true, sent, total: tokens.length, testMode: true};
   }
