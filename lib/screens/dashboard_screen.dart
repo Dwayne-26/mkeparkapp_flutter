@@ -251,18 +251,10 @@ int _addressFromPosition(Position position) {
 }
 
 Future<String> _resolveAltSubtitle(UserProvider provider) async {
-  final service = AlternateSideParkingService();
-  int addressNumber = _addressNumber(provider.profile?.address);
-  try {
-    final loc = await LocationService().getCurrentPosition();
-    if (loc != null) {
-      addressNumber = _addressFromPosition(loc);
-    }
-  } catch (_) {
-    // ignore location errors, fall back to profile address
-  }
-  final status = service.status(addressNumber: addressNumber);
-  return status.sideToday == ParkingSide.odd
+  final service = AlternateSideParkingService.instance;
+  // Service only uses date-based odd/even; location is not needed here.
+  final instructions = service.getTodayInstructions();
+  return instructions.parkingSide == ParkingSide.odd
       ? 'Odd side today'
       : 'Even side today';
 }
