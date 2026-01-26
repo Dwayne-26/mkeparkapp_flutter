@@ -35,6 +35,8 @@ class UserProfile {
       displayName: 'Default City',
     ),
     this.languageCode = 'en',
+    this.alertsDay,
+    this.alertsToday = 0,
   });
 
   final String id;
@@ -56,6 +58,8 @@ class UserProfile {
   final List<Permit> permits;
   final List<Reservation> reservations;
   final List<StreetSweepingSchedule> sweepingSchedules;
+  final DateTime? alertsDay;
+  final int alertsToday;
 
   UserProfile copyWith({
     String? name,
@@ -76,6 +80,8 @@ class UserProfile {
     String? tenantId,
     CityRulePack? rulePack,
     String? languageCode,
+    DateTime? alertsDay,
+    int? alertsToday,
   }) {
     return UserProfile(
       id: id,
@@ -97,6 +103,8 @@ class UserProfile {
       permits: permits ?? this.permits,
       reservations: reservations ?? this.reservations,
       sweepingSchedules: sweepingSchedules ?? this.sweepingSchedules,
+      alertsDay: alertsDay ?? this.alertsDay,
+      alertsToday: alertsToday ?? this.alertsToday,
     );
   }
 
@@ -175,6 +183,10 @@ class UserProfile {
             ),
           )
           .toList(),
+      alertsDay: json['alertsDay'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['alertsDay'] as int)
+          : null,
+      alertsToday: json['alertsToday'] as int? ?? 0,
     );
   }
 
@@ -207,5 +219,7 @@ class UserProfile {
     'sweepingSchedules': sweepingSchedules
         .map((schedule) => schedule.toJson())
         .toList(),
+    'alertsDay': alertsDay?.millisecondsSinceEpoch,
+    'alertsToday': alertsToday,
   };
 }

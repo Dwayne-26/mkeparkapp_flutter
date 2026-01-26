@@ -217,39 +217,80 @@ class UserRepository {
     }
   }
 
-  /// Report a sighting (global collection). This will:
-  /// - add a reporter record under /sightings/{id}/reporters/{uid} to prevent
-  ///   duplicate reports from the same user, and
-  /// - increment `reportCount` on the sighting doc (creating baseline if needed).
-  Future<void> reportSightingGlobal(String sightingId) async {
+  /// Increment the daily alert count for the current user.
+  Future<void> incrementAlertCount() async {
     final userId = _activeUserId;
     if (userId == null) return;
 
-    final sightingRef = _firestore.collection('sightings').doc(sightingId);
-    final reporterRef = sightingRef.collection('reporters').doc(userId);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     try {
       await _firestore.runTransaction((tx) async {
-        final reporterSnap = await tx.get(reporterRef);
-        if (reporterSnap.exists) return; // already reported by this user
+        final userDoc = _userDocument();
+        final snapshot = await tx.get(userDoc);
 
-        // create reporter record
-        tx.set(reporterRef, {'reportedAt': FieldValue.serverTimestamp()});
+        if (!snapshot.exists) return;
 
-        final sightingSnap = await tx.get(sightingRef);
-        if (!sightingSnap.exists) {
-          tx.set(sightingRef, {
-            'reportCount': 1,
-            'reports': 0, // baseline for compatibility
-            'timestamp': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        } else {
-          tx.update(sightingRef, {'reportCount': FieldValue.increment(1)});
-        }
+        final data = snapshot.data()!;
+        final lastAlertDay = data['alertsDay'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(data['alertsDay'] as int)
+            : null;
+        final currentCount = data['alertsToday'] as int? ?? 0;
+
+        // Reset count if it's a new day
+        final newCount = (lastAlertDay == null ||
+                !isSameDay(lastAlertDay, today))
+            ? 1
+            : currentCount + 1;
+
+        tx.update(userDoc, {
+          'alertsDay': today.millisecondsSinceEpoch,
+          'alertsToday': newCount,
+        });
       });
     } catch (e) {
-      // Swallow errors — reporting should not block UX. Higher-level code
-      // may surface a message if desired.
+      // If transaction fails, try a simple update
+      try {
+        await _userDocument().update({
+          'alertsDay': today.millisecondsSinceEpoch,
+          'alertsToday': FieldValue.increment(1),
+        });
+      } catch (_) {
+        // Swallow errors — alert counting should not block UX
+      }
     }
+  }
+
+  /// Get the current alert count for today.
+  Future<int> getCurrentAlertCount() async {
+    final userId = _activeUserId;
+    if (userId == null) return 0;
+
+    try {
+      final doc = await _userDocument().get();
+      if (!doc.exists) return 0;
+
+      final data = doc.data()!;
+      final lastAlertDay = data['alertsDay'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(data['alertsDay'] as int)
+          : null;
+      final count = data['alertsToday'] as int? ?? 0;
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      // Return 0 if it's a new day
+      return (lastAlertDay == null || !isSameDay(lastAlertDay, today)) ? 0 : count;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Helper function to check if two dates are the same day
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+           date1.month == date2.month &&
+           date1.day == date2.day;
   }
 }
