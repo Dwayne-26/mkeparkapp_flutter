@@ -17,6 +17,7 @@ class NotificationService {
   FirebaseMessaging? _messaging;
   final _local = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  Future<bool> Function()? _canReceiveAlertCallback;
 
   Future<void> initialize({required bool enableRemoteNotifications}) async {
     if (_initialized) return;
@@ -43,30 +44,34 @@ class NotificationService {
       _messaging = FirebaseMessaging.instance;
       await _requestPermissions();
       await _registerToken();
+      await _subscribeToAlertsTopic();
       _listenForTokenRefresh();
       _listenForMessageOpens();
       await _handleInitialMessage();
       _initTimeZones();
       CloudLogService.instance.logEvent('push_notifications_enabled');
 
-      FirebaseMessaging.onMessage.listen((message) {
+      FirebaseMessaging.onMessage.listen((message) async {
         final notification = message.notification;
         final android = message.notification?.android;
         if (notification != null) {
-          _local.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                'risk_alerts',
-                'Risk Alerts',
-                importance: Importance.high,
-                icon: android?.smallIcon,
+          final canReceive = await (_canReceiveAlertCallback?.call() ?? Future.value(true));
+          if (canReceive) {
+            _local.show(
+              notification.hashCode,
+              notification.title,
+              notification.body,
+              NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'risk_alerts',
+                  'Risk Alerts',
+                  importance: Importance.high,
+                  icon: android?.smallIcon,
+                ),
+                iOS: const DarwinNotificationDetails(),
               ),
-              iOS: const DarwinNotificationDetails(),
-            ),
-          );
+            );
+          }
         }
       });
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -162,6 +167,23 @@ class NotificationService {
       CloudLogService.instance
           .recordError('push_token_register_failed', e, StackTrace.current);
     }
+  }
+
+  Future<void> _subscribeToAlertsTopic() async {
+    if (_messaging == null) return;
+    try {
+      await _messaging!.subscribeToTopic('alerts');
+      log('Subscribed to alerts topic');
+      CloudLogService.instance.logEvent('subscribed_to_alerts_topic');
+    } catch (e) {
+      log('Failed to subscribe to alerts topic: $e');
+      CloudLogService.instance
+          .recordError('alerts_topic_subscription_failed', e, StackTrace.current);
+    }
+  }
+
+  void setAlertLimitCallback(Future<bool> Function() callback) {
+    _canReceiveAlertCallback = callback;
   }
 
   void _listenForTokenRefresh() {

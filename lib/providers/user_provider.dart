@@ -146,6 +146,16 @@ class UserProvider extends ChangeNotifier {
     return set.toList();
   }
 
+  // Daily alert tracking methods
+  Future<bool> canReceiveAlert() async {
+    final currentCount = await _repository.getCurrentAlertCount();
+    return currentCount < maxAlertsPerDay;
+  }
+
+  Future<void> recordAlertReceived() async {
+    await _repository.incrementAlertCount();
+  }
+
   Future<void> initialize() async {
     final auth = _auth;
     if (auth == null || !_firebaseEnabled) {
@@ -181,6 +191,17 @@ class UserProvider extends ChangeNotifier {
       _guestReservations = const [];
       _guestSweepingSchedules = const [];
     }
+
+    // Set up alert limit callback for NotificationService
+    NotificationService.instance.setAlertLimitCallback(() async {
+      final canReceive = await canReceiveAlert();
+      if (canReceive) {
+        await recordAlertReceived();
+        return true;
+      }
+      return false;
+    });
+
     notifyListeners();
   }
 

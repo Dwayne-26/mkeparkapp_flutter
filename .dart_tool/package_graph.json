@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "mkeparkapp_flutter",
-      "version": "1.0.0+1",
+      "version": "1.0.29+32",
       "dependencies": [
         "cloud_firestore",
         "cloud_functions",
@@ -38,7 +38,8 @@
         "build_runner",
         "drift_dev",
         "flutter_lints",
-        "flutter_test"
+        "flutter_test",
+        "mockito"
       ]
     },
     {
@@ -1816,6 +1817,22 @@
       "version": "1.0.1",
       "dependencies": [
         "meta"
+      ]
+    },
+    {
+      "name": "mockito",
+      "version": "5.6.3",
+      "dependencies": [
+        "analyzer",
+        "build",
+        "code_builder",
+        "collection",
+        "dart_style",
+        "matcher",
+        "meta",
+        "path",
+        "source_gen",
+        "test_api"
       ]
     }
   ],

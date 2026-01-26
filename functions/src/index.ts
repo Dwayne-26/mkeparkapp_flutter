@@ -1,6 +1,5 @@
 import {
   onDocumentCreated,
-  onDocumentUpdated,
   onDocumentWritten,
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
@@ -219,18 +218,19 @@ export const submitSighting = onCall(async (request) => {
   return {success: true, message: "Report submitted for review!"};
 });
 
-export const notifyOnApproval = onDocumentUpdated(
+export const notifyOnApproval = onDocumentWritten(
   "alerts/{alertId}",
   async (event) => {
-    const before = event.data?.before.data() as any | undefined;
-    const after = event.data?.after.data() as any | undefined;
+    const after = event.data?.after;
+    if (!after || !after.exists) return;
 
-    if (!before || !after) return;
+    const data = after.data() as any;
+    const isActive = data.active === true || data.status === "active";
 
-    if (!before.isPublic && after.isPublic) {
-      const title = (after.title ?? "Alert").toString();
-      const message = (after.message ?? "").toString();
-      const location = (after.location ?? "").toString();
+    if (isActive) {
+      const title = (data.title ?? "Alert").toString();
+      const message = (data.message ?? "").toString();
+      const location = (data.location ?? "").toString();
       const body = [message, location ? `at ${location}` : ""]
         .filter((part) => part && part.trim().length > 0)
         .join(" ");
@@ -239,7 +239,7 @@ export const notifyOnApproval = onDocumentUpdated(
         topic: "alerts",
         notification: {
           title,
-          body: body || "New alert approved.",
+          body: body || "New alert.",
         },
       });
     }
